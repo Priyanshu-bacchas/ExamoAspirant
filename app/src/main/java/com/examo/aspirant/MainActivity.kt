@@ -24,22 +24,12 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
 import android.widget.Toast
-import androidx.credentials.CredentialManager
-import androidx.credentials.CustomCredential
-import androidx.credentials.GetCredentialRequest
-import com.google.android.libraries.identity.googleid.GetGoogleIdOption
-import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
-import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.GoogleAuthProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
-import org.json.JSONObject
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
@@ -49,7 +39,6 @@ class MainActivity : Activity() {
     private lateinit var webView: WebView
     private var popupWebView: WebView? = null
     private val activityScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-    private var googleLoginInProgress = false
     private var fileChooserCallback: ValueCallback<Array<Uri>>? = null
     private var customView: View? = null
     private var customViewCallback: WebChromeClient.CustomViewCallback? = null
@@ -77,18 +66,40 @@ class MainActivity : Activity() {
 
         root = FrameLayout(this).apply { setBackgroundColor(Color.WHITE) }
         webView = createWebView()
+        webView.visibility = View.GONE
         root.addView(webView, FrameLayout.LayoutParams(-1, -1))
+        val splash = ExamoSplashView(this)
+        root.addView(splash, FrameLayout.LayoutParams(-1, -1))
         setContentView(root)
 
-        if (savedInstanceState == null) {
-            webView.loadUrl(getString(R.string.examo_website_url))
-        } else {
-            val restored = webView.restoreState(savedInstanceState)
-            if (restored == null) webView.loadUrl(getString(R.string.examo_website_url))
+        var touchStartY = 0f
+        splash.setOnTouchListener { _, event ->
+            when (event.action) {
+                android.view.MotionEvent.ACTION_DOWN -> { touchStartY = event.y; true }
+                android.view.MotionEvent.ACTION_UP -> {
+                    val swipeDistance = touchStartY - event.y
+                    if (swipeDistance > dp(65)) {
+                        splash.animate().alpha(0f).setDuration(180).withEndAction {
+                            root.removeView(splash)
+                            webView.visibility = View.VISIBLE
+                            if (savedInstanceState == null) {
+                                webView.loadUrl(getString(R.string.examo_website_url))
+                            } else {
+                                val restored = webView.restoreState(savedInstanceState)
+                                if (restored == null) webView.loadUrl(getString(R.string.examo_website_url))
+                            }
+                        }.start()
+                    }
+                    true
+                }
+                else -> true
+            }
         }
     }
 
     @SuppressLint("SetJavaScriptEnabled")
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+
     private fun createWebView(): WebView {
         return WebView(this).apply {
             setBackgroundColor(Color.WHITE)
@@ -104,7 +115,6 @@ class MainActivity : Activity() {
 
             CookieManager.getInstance().setAcceptCookie(true)
             CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
-            addJavascriptInterface(AndroidBridge(), "ExamoAndroid")
 
             webViewClient = object : WebViewClient() {
                 override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
@@ -121,7 +131,6 @@ class MainActivity : Activity() {
                 override fun onPageFinished(view: WebView?, url: String?) {
                     super.onPageFinished(view, url)
                     installMobileNavigationFix(view)
-                    installNativeGoogleLoginHook(view)
                 }
             }
 
@@ -188,157 +197,6 @@ class MainActivity : Activity() {
                     return true
                 }
             }
-        }
-    }
-
-    private inner class AndroidBridge {
-        @JavascriptInterface
-        fun googleSignIn() {
-            runOnUiThread { startNativeGoogleSignIn() }
-        }
-    }
-
-    private fun installNativeGoogleLoginHook(view: WebView?) {
-        val script = """
-            (function () {
-              if (window.__examoNativeGoogleHook) return;
-              window.__examoNativeGoogleHook = true;
-              document.addEventListener('click', function (event) {
-                var button = event.target && event.target.closest
-                  ? event.target.closest('.ex-btn-outline,.btn-google') : null;
-                if (!button || !window.ExamoAndroid) return;
-                var label = (button.innerText || button.textContent || '').toLowerCase();
-                if (label.indexOf('continue with google') === -1) return;
-                event.preventDefault();
-                event.stopPropagation();
-                if (event.stopImmediatePropagation) event.stopImmediatePropagation();
-                window.ExamoAndroid.googleSignIn();
-              }, true);
-            })();
-        """.trimIndent()
-        view?.evaluateJavascript(script, null)
-    }
-
-    private fun startNativeGoogleSignIn() {
-        if (googleLoginInProgress) return
-        googleLoginInProgress = true
-        Toast.makeText(this, "Choose your Google account", Toast.LENGTH_SHORT).show()
-        activityScope.launch {
-            try {
-                val webClientId = getString(R.string.default_web_client_id)
-                val googleOption = GetGoogleIdOption.Builder()
-                    .setFilterByAuthorizedAccounts(false)
-                    .setServerClientId(webClientId)
-                    .setAutoSelectEnabled(false)
-                    .build()
-
-                val credentialManager = CredentialManager.create(this@MainActivity)
-                val result = try {
-                    credentialManager.getCredential(
-                        this@MainActivity,
-                        GetCredentialRequest.Builder().addCredentialOption(googleOption).build()
-                    )
-                } catch (_: androidx.credentials.exceptions.NoCredentialException) {
-                    val signInOption = GetSignInWithGoogleOption.Builder(webClientId).build()
-                    credentialManager.getCredential(
-                        this@MainActivity,
-                        GetCredentialRequest.Builder().addCredentialOption(signInOption).build()
-                    )
-                }
-                val credential = result.credential
-
-                if (credential !is CustomCredential ||
-                    credential.type != GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
-                ) {
-                    throw IllegalStateException("Google account selection did not return a valid ID token.")
-                }
-
-                val googleToken = GoogleIdTokenCredential.createFrom(credential.data).idToken
-                val firebaseCredential = GoogleAuthProvider.getCredential(googleToken, null)
-                val authResult = FirebaseAuth.getInstance()
-                    .signInWithCredential(firebaseCredential)
-                    .await()
-
-                val firebaseIdToken = authResult.user?.getIdToken(true)?.await()?.token
-                    ?: throw IllegalStateException("Firebase did not return an ID token.")
-
-                val response = withContext(Dispatchers.IO) {
-                    callExamoBackend(firebaseIdToken, authResult.user?.displayName)
-                }
-
-                val token = response.optString("token")
-                    .ifBlank { response.optString("Token") }
-                    .ifBlank { response.optJSONObject("data")?.optString("token").orEmpty() }
-                    .ifBlank { response.optJSONObject("Data")?.optString("Token").orEmpty() }
-
-                if (token.isBlank() || token == "null") {
-                    throw IllegalStateException("Examo backend did not return an app login token.")
-                }
-
-                val user = response.optJSONObject("user")
-                    ?: response.optJSONObject("User")
-                    ?: response.optJSONObject("data")?.optJSONObject("user")
-                    ?: response.optJSONObject("Data")?.optJSONObject("User")
-                    ?: JSONObject()
-                        .put("fullName", authResult.user?.displayName ?: "Student")
-                        .put("email", authResult.user?.email ?: "")
-
-                val tokenLiteral = JSONObject.quote(token)
-                val userLiteral = JSONObject.quote(user.toString())
-                webView.post {
-                    webView.evaluateJavascript(
-                        "localStorage.setItem('examo_token',$tokenLiteral);" +
-                            "localStorage.setItem('examo_user',$userLiteral);" +
-                            "sessionStorage.removeItem('examo_token');" +
-                            "sessionStorage.removeItem('examo_user');" +
-                            "window.location.replace('/');",
-                        null
-                    )
-                }
-                Toast.makeText(this@MainActivity, "Google login successful", Toast.LENGTH_SHORT).show()
-            } catch (error: Exception) {
-                android.util.Log.e("ExamoApp", "Native Google sign-in failed", error)
-                val message = when (error) {
-                    is androidx.credentials.exceptions.NoCredentialException ->
-                        "No Google account found on this device. Add a Google account in Android Settings."
-                    is androidx.credentials.exceptions.GetCredentialException ->
-                        error.message ?: "Google sign-in was cancelled or could not be completed."
-                    else -> error.message ?: "Google sign-in failed. Please try again."
-                }
-                Toast.makeText(this@MainActivity, message, Toast.LENGTH_LONG).show()
-            } finally {
-                googleLoginInProgress = false
-            }
-        }
-    }
-
-    private fun callExamoBackend(firebaseIdToken: String, fullName: String?): JSONObject {
-        val connection = (URL(getString(R.string.examo_api_url) + "/Auth/firebase")
-            .openConnection() as HttpURLConnection)
-        connection.requestMethod = "POST"
-        connection.connectTimeout = 25000
-        connection.readTimeout = 30000
-        connection.doOutput = true
-        connection.setRequestProperty("Content-Type", "application/json")
-        connection.setRequestProperty("Accept", "application/json")
-
-        try {
-            val payload = JSONObject().put("idToken", firebaseIdToken)
-            if (!fullName.isNullOrBlank()) payload.put("fullName", fullName)
-            connection.outputStream.use { it.write(payload.toString().toByteArray(Charsets.UTF_8)) }
-
-            val status = connection.responseCode
-            val stream = if (status in 200..299) connection.inputStream else connection.errorStream
-            val body = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }.orEmpty()
-            if (status !in 200..299) {
-                val message = try {
-                    JSONObject(body).optString("message").ifBlank { body }
-                } catch (_: Exception) { body }
-                throw IllegalStateException(message.ifBlank { "Examo login failed (HTTP $status)." })
-            }
-            return JSONObject(body)
-        } finally {
-            connection.disconnect()
         }
     }
 
