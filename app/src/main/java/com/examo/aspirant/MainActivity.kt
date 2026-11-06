@@ -66,33 +66,62 @@ class MainActivity : Activity() {
 
         root = FrameLayout(this).apply { setBackgroundColor(Color.WHITE) }
         webView = createWebView()
-        webView.visibility = View.GONE
         root.addView(webView, FrameLayout.LayoutParams(-1, -1))
         val splash = ExamoSplashView(this)
         root.addView(splash, FrameLayout.LayoutParams(-1, -1))
         setContentView(root)
 
-        var touchStartY = 0f
+        // Load the web app behind the splash so it is ready as soon as the user swipes up.
+        if (savedInstanceState == null) {
+            webView.loadUrl(getString(R.string.examo_website_url))
+        } else {
+            val restored = webView.restoreState(savedInstanceState)
+            if (restored == null) webView.loadUrl(getString(R.string.examo_website_url))
+        }
+
+        var splashTouchStartY = 0f
+        var webTouchStartY = 0f
+        var webTouchStartX = 0f
         splash.setOnTouchListener { _, event ->
             when (event.action) {
-                android.view.MotionEvent.ACTION_DOWN -> { touchStartY = event.y; true }
+                android.view.MotionEvent.ACTION_DOWN -> { splashTouchStartY = event.rawY; true }
+                android.view.MotionEvent.ACTION_MOVE -> true
                 android.view.MotionEvent.ACTION_UP -> {
-                    val swipeDistance = touchStartY - event.y
-                    if (swipeDistance > dp(65)) {
-                        splash.animate().alpha(0f).setDuration(180).withEndAction {
-                            root.removeView(splash)
-                            webView.visibility = View.VISIBLE
-                            if (savedInstanceState == null) {
-                                webView.loadUrl(getString(R.string.examo_website_url))
-                            } else {
-                                val restored = webView.restoreState(savedInstanceState)
-                                if (restored == null) webView.loadUrl(getString(R.string.examo_website_url))
-                            }
-                        }.start()
+                    val distance = splashTouchStartY - event.rawY
+                    if (distance > dp(55)) {
+                        splash.animate().translationY(-splash.height.toFloat()).alpha(0f)
+                            .setDuration(230).withEndAction { splash.visibility = View.GONE }.start()
                     }
                     true
                 }
+                android.view.MotionEvent.ACTION_CANCEL -> true
                 else -> true
+            }
+        }
+
+        // A downward swipe starting at the top edge of the web page brings the same
+        // splash sheet back; the splash background remains intact underneath.
+        webView.setOnTouchListener { _, event ->
+            when (event.action) {
+                android.view.MotionEvent.ACTION_DOWN -> {
+                    webTouchStartY = event.rawY
+                    webTouchStartX = event.rawX
+                    false
+                }
+                android.view.MotionEvent.ACTION_UP -> {
+                    val dy = event.rawY - webTouchStartY
+                    val dx = kotlin.math.abs(event.rawX - webTouchStartX)
+                    if (webView.scrollY <= 0 && webTouchStartY <= dp(72) && dy > dp(85) && dy > dx * 1.25f) {
+                        splash.visibility = View.VISIBLE
+                        splash.alpha = 1f
+                        splash.translationY = -splash.height.toFloat()
+                        splash.post {
+                            splash.animate().translationY(0f).setDuration(260).start()
+                        }
+                    }
+                    false
+                }
+                else -> false
             }
         }
     }
