@@ -104,13 +104,54 @@ class MainActivity : Activity() {
     @SuppressLint("SetJavaScriptEnabled")
     private fun createPopupWebView(): WebView {
         return WebView(this).apply {
+            setBackgroundColor(Color.WHITE)
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
+            settings.databaseEnabled = true
+            settings.loadsImagesAutomatically = true
             settings.javaScriptCanOpenWindowsAutomatically = true
             settings.setSupportMultipleWindows(true)
+            settings.mediaPlaybackRequiresUserGesture = false
+
+            CookieManager.getInstance().setAcceptCookie(true)
             CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
-            webViewClient = WebViewClient()
-            webChromeClient = WebChromeClient()
+
+            // Firebase Google sign-in opens a child window. Keep the OAuth callback
+            // in this child WebView so Firebase can message window.opener.
+            webViewClient = object : WebViewClient() {
+                override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                    val uri = request?.url ?: return false
+                    val scheme = uri.scheme?.lowercase() ?: return false
+                    return if (scheme == "http" || scheme == "https" || scheme == "about" || scheme == "javascript") {
+                        false
+                    } else {
+                        openExternal(uri)
+                    }
+                }
+            }
+
+            webChromeClient = object : WebChromeClient() {
+                override fun onCloseWindow(window: WebView?) {
+                    // Important: Firebase calls window.close() after the OAuth
+                    // handler posts its result to the opener. Close only the
+                    // popup and reveal the original login page.
+                    if (window != null && window == popupWebView) {
+                        root.removeView(window)
+                        window.stopLoading()
+                        window.destroy()
+                        popupWebView = null
+                        webView.visibility = View.VISIBLE
+                        webView.requestFocus()
+                        CookieManager.getInstance().flush()
+                    }
+                }
+
+                override fun onJsAlert(view: WebView?, url: String?, message: String?, result: JsResult?): Boolean {
+                    Toast.makeText(this@MainActivity, message ?: "", Toast.LENGTH_LONG).show()
+                    result?.confirm()
+                    return true
+                }
+            }
         }
     }
 
