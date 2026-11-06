@@ -7,8 +7,8 @@ import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
-import android.view.View
 import android.webkit.CookieManager
+import android.webkit.JavascriptInterface
 import android.webkit.JsResult
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
@@ -16,18 +16,37 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
 import android.widget.Toast
+import androidx.credentials.CredentialManager
+import androidx.credentials.CustomCredential
+import androidx.credentials.GetCredentialRequest
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.GoogleAuthProvider
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
 
 class MainActivity : Activity() {
     private lateinit var root: FrameLayout
     private lateinit var webView: WebView
     private var popupWebView: WebView? = null
+    private val activityScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private var googleLoginInProgress = false
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.statusBarColor = Color.rgb(248, 249, 252)
         window.navigationBarColor = Color.rgb(17, 24, 39)
-        window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+        window.decorView.systemUiVisibility = android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
 
         root = FrameLayout(this).apply { setBackgroundColor(Color.WHITE) }
         webView = createWebView()
@@ -58,6 +77,7 @@ class MainActivity : Activity() {
 
             CookieManager.getInstance().setAcceptCookie(true)
             CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
+            addJavascriptInterface(AndroidBridge(), "ExamoAndroid")
 
             webViewClient = object : WebViewClient() {
                 override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
@@ -70,6 +90,7 @@ class MainActivity : Activity() {
                 override fun onPageFinished(view: WebView?, url: String?) {
                     super.onPageFinished(view, url)
                     installMobileNavigationFix(view)
+                    installNativeGoogleLoginHook(view)
                 }
             }
 
@@ -101,6 +122,146 @@ class MainActivity : Activity() {
         }
     }
 
+    private inner class AndroidBridge {
+        @JavascriptInterface
+        fun googleSignIn() {
+            runOnUiThread { startNativeGoogleSignIn() }
+        }
+    }
+
+    private fun installNativeGoogleLoginHook(view: WebView?) {
+        val script = """
+            (function () {
+              if (window.__examoNativeGoogleHook) return;
+              window.__examoNativeGoogleHook = true;
+              document.addEventListener('click', function (event) {
+                var button = event.target && event.target.closest
+                  ? event.target.closest('.btn-google') : null;
+                if (!button || !window.ExamoAndroid) return;
+                event.preventDefault();
+                event.stopPropagation();
+                if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+                window.ExamoAndroid.googleSignIn();
+              }, true);
+            })();
+        """.trimIndent()
+        view?.evaluateJavascript(script, null)
+    }
+
+    private fun startNativeGoogleSignIn() {
+        if (googleLoginInProgress) return
+        googleLoginInProgress = true
+        Toast.makeText(this, "Choose your Google account", Toast.LENGTH_SHORT).show()
+        activityScope.launch {
+            try {
+                val googleOption = GetGoogleIdOption.Builder()
+                    .setFilterByAuthorizedAccounts(false)
+                    .setServerClientId(getString(R.string.default_web_client_id))
+                    .setAutoSelectEnabled(false)
+                    .build()
+
+                val request = GetCredentialRequest.Builder()
+                    .addCredentialOption(googleOption)
+                    .build()
+
+                val credentialManager = CredentialManager.create(this@MainActivity)
+                val result = credentialManager.getCredential(this@MainActivity, request)
+                val credential = result.credential
+
+                if (credential !is CustomCredential ||
+                    credential.type != GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
+                ) {
+                    throw IllegalStateException("Google account selection did not return a valid ID token.")
+                }
+
+                val googleToken = GoogleIdTokenCredential.createFrom(credential.data).idToken
+                val firebaseCredential = GoogleAuthProvider.getCredential(googleToken, null)
+                val authResult = FirebaseAuth.getInstance()
+                    .signInWithCredential(firebaseCredential)
+                    .await()
+
+                val firebaseIdToken = authResult.user?.getIdToken(true)?.await()?.token
+                    ?: throw IllegalStateException("Firebase did not return an ID token.")
+
+                val response = withContext(Dispatchers.IO) {
+                    callExamoBackend(firebaseIdToken, authResult.user?.displayName)
+                }
+
+                val token = response.optString("token")
+                    .ifBlank { response.optString("Token") }
+                    .ifBlank { response.optJSONObject("data")?.optString("token").orEmpty() }
+                    .ifBlank { response.optJSONObject("Data")?.optString("Token").orEmpty() }
+
+                if (token.isBlank() || token == "null") {
+                    throw IllegalStateException("Examo backend did not return an app login token.")
+                }
+
+                val user = response.optJSONObject("user")
+                    ?: response.optJSONObject("User")
+                    ?: response.optJSONObject("data")?.optJSONObject("user")
+                    ?: response.optJSONObject("Data")?.optJSONObject("User")
+                    ?: JSONObject()
+                        .put("fullName", authResult.user?.displayName ?: "Student")
+                        .put("email", authResult.user?.email ?: "")
+
+                val tokenLiteral = JSONObject.quote(token)
+                val userLiteral = JSONObject.quote(user.toString())
+                webView.post {
+                    webView.evaluateJavascript(
+                        "localStorage.setItem('examo_token',$tokenLiteral);" +
+                            "localStorage.setItem('examo_user',$userLiteral);" +
+                            "sessionStorage.removeItem('examo_token');" +
+                            "sessionStorage.removeItem('examo_user');" +
+                            "window.location.replace('/');",
+                        null
+                    )
+                }
+                Toast.makeText(this@MainActivity, "Google login successful", Toast.LENGTH_SHORT).show()
+            } catch (error: Exception) {
+                val message = when (error) {
+                    is androidx.credentials.exceptions.NoCredentialException ->
+                        "No Google account found on this device. Add a Google account in Android Settings."
+                    is androidx.credentials.exceptions.GetCredentialException ->
+                        error.message ?: "Google sign-in was cancelled or could not be completed."
+                    else -> error.message ?: "Google sign-in failed. Please try again."
+                }
+                Toast.makeText(this@MainActivity, message, Toast.LENGTH_LONG).show()
+            } finally {
+                googleLoginInProgress = false
+            }
+        }
+    }
+
+    private fun callExamoBackend(firebaseIdToken: String, fullName: String?): JSONObject {
+        val connection = (URL(getString(R.string.examo_api_url) + "/Auth/firebase")
+            .openConnection() as HttpURLConnection)
+        connection.requestMethod = "POST"
+        connection.connectTimeout = 25000
+        connection.readTimeout = 30000
+        connection.doOutput = true
+        connection.setRequestProperty("Content-Type", "application/json")
+        connection.setRequestProperty("Accept", "application/json")
+
+        try {
+            val payload = JSONObject().put("idToken", firebaseIdToken)
+            if (!fullName.isNullOrBlank()) payload.put("fullName", fullName)
+            connection.outputStream.use { it.write(payload.toString().toByteArray(Charsets.UTF_8)) }
+
+            val status = connection.responseCode
+            val stream = if (status in 200..299) connection.inputStream else connection.errorStream
+            val body = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }.orEmpty()
+            if (status !in 200..299) {
+                val message = try {
+                    JSONObject(body).optString("message").ifBlank { body }
+                } catch (_: Exception) { body }
+                throw IllegalStateException(message.ifBlank { "Examo login failed (HTTP $status)." })
+            }
+            return JSONObject(body)
+        } finally {
+            connection.disconnect()
+        }
+    }
+
     @SuppressLint("SetJavaScriptEnabled")
     private fun createPopupWebView(): WebView {
         return WebView(this).apply {
@@ -112,46 +273,16 @@ class MainActivity : Activity() {
             settings.javaScriptCanOpenWindowsAutomatically = true
             settings.setSupportMultipleWindows(true)
             settings.mediaPlaybackRequiresUserGesture = false
-
             CookieManager.getInstance().setAcceptCookie(true)
             CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
-
-            // Firebase Google sign-in opens a child window. Keep the OAuth callback
-            // in this child WebView so Firebase can message window.opener.
             webViewClient = object : WebViewClient() {
                 override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                     val uri = request?.url ?: return false
                     val scheme = uri.scheme?.lowercase() ?: return false
-                    return if (scheme == "http" || scheme == "https" || scheme == "about" || scheme == "javascript") {
-                        false
-                    } else {
-                        openExternal(uri)
-                    }
+                    return if (scheme == "http" || scheme == "https" || scheme == "about" || scheme == "javascript") false else openExternal(uri)
                 }
             }
-
-            webChromeClient = object : WebChromeClient() {
-                override fun onCloseWindow(window: WebView?) {
-                    // Important: Firebase calls window.close() after the OAuth
-                    // handler posts its result to the opener. Close only the
-                    // popup and reveal the original login page.
-                    if (window != null && window == popupWebView) {
-                        root.removeView(window)
-                        window.stopLoading()
-                        window.destroy()
-                        popupWebView = null
-                        webView.visibility = View.VISIBLE
-                        webView.requestFocus()
-                        CookieManager.getInstance().flush()
-                    }
-                }
-
-                override fun onJsAlert(view: WebView?, url: String?, message: String?, result: JsResult?): Boolean {
-                    Toast.makeText(this@MainActivity, message ?: "", Toast.LENGTH_LONG).show()
-                    result?.confirm()
-                    return true
-                }
-            }
+            webChromeClient = WebChromeClient()
         }
     }
 
@@ -170,7 +301,6 @@ class MainActivity : Activity() {
             (function () {
               if (window.__examoAndroidNavInstalled) return;
               window.__examoAndroidNavInstalled = true;
-
               var css = document.createElement('style');
               css.id = 'examo-android-nav-style';
               css.textContent = '@media(max-width:600px){' +
@@ -183,78 +313,47 @@ class MainActivity : Activity() {
                 '.examo-mobile-backdrop.open{display:block!important}' +
                 '.topbar{position:sticky!important;top:0!important;z-index:1000!important}.content-area{min-width:0!important}}';
               (document.head || document.documentElement).appendChild(css);
-
-              function sidebar(){ return document.querySelector('.sidebar'); }
+              function sidebar(){return document.querySelector('.sidebar');}
               function backdrop(){
                 var el=document.querySelector('.examo-mobile-backdrop');
-                if(!el){
-                  el=document.createElement('div');
-                  el.className='examo-mobile-backdrop';
-                  document.body.appendChild(el);
-                  el.addEventListener('click',closeMenu);
-                  el.addEventListener('touchend',function(e){e.preventDefault();closeMenu();},{passive:false});
-                }
+                if(!el){el=document.createElement('div');el.className='examo-mobile-backdrop';document.body.appendChild(el);el.addEventListener('click',closeMenu);}
                 return el;
               }
               function closeMenu(){
-                var s=sidebar();
-                if(s)s.classList.remove('examo-mobile-open');
-                var b=document.querySelector('.examo-mobile-backdrop');
-                if(b)b.classList.remove('open');
+                var s=sidebar();if(s)s.classList.remove('examo-mobile-open');
+                var b=document.querySelector('.examo-mobile-backdrop');if(b)b.classList.remove('open');
                 document.body.style.overflow='';
               }
               function toggleMenu(){
-                var s=sidebar();
-                if(!s)return;
-                var b=backdrop();
+                var s=sidebar();if(!s)return;var b=backdrop();
                 var open=!s.classList.contains('examo-mobile-open');
-                s.classList.toggle('examo-mobile-open',open);
-                b.classList.toggle('open',open);
+                s.classList.toggle('examo-mobile-open',open);b.classList.toggle('open',open);
                 document.body.style.overflow=open?'hidden':'';
               }
-
               var lastToggle=0;
               function handleMenuEvent(e){
-                var target=e.target;
-                var menu=target && target.closest ? target.closest('.mobile-menu') : null;
-                if(!menu)return;
-                var now=Date.now();
-                if(now-lastToggle<450)return;
-                lastToggle=now;
-                e.preventDefault();
-                e.stopPropagation();
-                if(e.stopImmediatePropagation)e.stopImmediatePropagation();
-                toggleMenu();
+                var menu=e.target&&e.target.closest?e.target.closest('.mobile-menu'):null;if(!menu)return;
+                var now=Date.now();if(now-lastToggle<450)return;lastToggle=now;
+                e.preventDefault();e.stopPropagation();if(e.stopImmediatePropagation)e.stopImmediatePropagation();toggleMenu();
               }
-              // Bind directly to the real React header node and rebind if React remounts it.
               function bindMenu(){
                 var menu=document.querySelector('.mobile-menu');
-                if(!menu || menu.dataset.examoAndroidBound==='1')return;
+                if(!menu||menu.dataset.examoAndroidBound==='1')return;
                 menu.dataset.examoAndroidBound='1';
                 menu.addEventListener('click',handleMenuEvent,true);
                 menu.addEventListener('touchend',handleMenuEvent,{capture:true,passive:false});
                 menu.addEventListener('pointerup',handleMenuEvent,true);
-                menu.setAttribute('role','button');
-                menu.setAttribute('aria-label','Open navigation menu');
-                menu.setAttribute('tabindex','0');
+                menu.setAttribute('role','button');menu.setAttribute('aria-label','Open navigation menu');menu.setAttribute('tabindex','0');
               }
               document.addEventListener('click',handleMenuEvent,true);
               document.addEventListener('touchend',handleMenuEvent,{capture:true,passive:false});
               document.addEventListener('pointerup',handleMenuEvent,true);
               document.addEventListener('click',function(e){
-                var item=e.target&&e.target.closest?e.target.closest('.sidebar-item,.sidebar-subitem'):null;
-                if(item)closeMenu();
+                var item=e.target&&e.target.closest?e.target.closest('.sidebar-item,.sidebar-subitem'):null;if(item)closeMenu();
               },true);
-              document.addEventListener('keydown',function(e){
-                if(e.key==='Escape')closeMenu();
-                if((e.key==='Enter'||e.key===' ') && document.activeElement && document.activeElement.classList.contains('mobile-menu')){
-                  e.preventDefault();toggleMenu();
-                }
-              });
+              document.addEventListener('keydown',function(e){if(e.key==='Escape')closeMenu();});
               window.addEventListener('resize',function(){if(window.innerWidth>600)closeMenu();});
-              bindMenu();
-              new MutationObserver(bindMenu).observe(document.documentElement,{childList:true,subtree:true});
-              window.__examoAndroidCloseMenu=closeMenu;
+              bindMenu();new MutationObserver(bindMenu).observe(document.documentElement,{childList:true,subtree:true});
             })();
         """.trimIndent()
         view?.evaluateJavascript(script, null)
@@ -290,6 +389,7 @@ class MainActivity : Activity() {
     }
 
     override fun onDestroy() {
+        activityScope.cancel()
         popupWebView?.destroy()
         if (::webView.isInitialized) webView.destroy()
         super.onDestroy()
