@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Examo Aspirant</string>
+    <string name="examo_website_url">https://YOUR-EXAMO-WEBSITE-URL</string>
+</resources>
