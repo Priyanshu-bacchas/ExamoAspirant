@@ -1,95 +1,37 @@
 package com.examo.aspirant
 
-import android.annotation.SuppressLint
 import android.app.Activity
-import android.graphics.Color
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
-import android.view.Gravity
-import android.view.View
-import android.webkit.WebChromeClient
-import android.webkit.WebResourceError
-import android.webkit.WebResourceRequest
-import android.webkit.WebView
-import android.webkit.WebViewClient
-import android.widget.FrameLayout
-import android.widget.ProgressBar
-import android.widget.TextView
+import androidx.browser.customtabs.CustomTabsIntent
 
 class MainActivity : Activity() {
-    private lateinit var webView: WebView
-    private lateinit var progress: ProgressBar
-    private lateinit var message: TextView
-
-    @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val root = FrameLayout(this).apply { setBackgroundColor(Color.WHITE) }
-        webView = WebView(this)
-        progress = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal)
-        message = TextView(this).apply {
-            textSize = 16f
-            setTextColor(Color.DKGRAY)
-            gravity = Gravity.CENTER
-            visibility = View.GONE
-            setPadding(32, 32, 32, 32)
-            setOnClickListener { loadWebsite() }
+
+        val websiteUrl = getString(R.string.examo_website_url)
+        if (websiteUrl.contains("YOUR-EXAMO-WEBSITE-URL")) {
+            finish()
+            return
         }
-        root.addView(webView, FrameLayout.LayoutParams(-1, -1))
-        root.addView(progress, FrameLayout.LayoutParams(-1, 8))
-        root.addView(message, FrameLayout.LayoutParams(-1, -1))
-        setContentView(root)
 
-        webView.settings.javaScriptEnabled = true
-        webView.settings.domStorageEnabled = true
-        webView.settings.loadsImagesAutomatically = true
-        webView.settings.useWideViewPort = true
-        webView.settings.loadWithOverviewMode = true
-        webView.webChromeClient = object : WebChromeClient() {
-            override fun onProgressChanged(view: WebView?, value: Int) {
-                progress.progress = value
-                progress.visibility = if (value >= 100) View.GONE else View.VISIBLE
-            }
+        val uri = Uri.parse(websiteUrl)
+        try {
+            // Use the real Chrome browser engine and its persistent origin storage.
+            // This avoids WebView's isolated sessionStorage problems with Firebase OAuth
+            // and keeps the login/OTP page alive while the user switches to their email app.
+            val customTabs = CustomTabsIntent.Builder()
+                .setShowTitle(true)
+                .setToolbarColor(android.graphics.Color.rgb(30, 55, 112))
+                .setUrlBarHidingEnabled(false)
+                .build()
+            customTabs.launchUrl(this, uri)
+        } catch (_: ActivityNotFoundException) {
+            startActivity(Intent(Intent.ACTION_VIEW, uri))
+        } finally {
+            finish()
         }
-        webView.webViewClient = object : WebViewClient() {
-            override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
-                message.visibility = View.GONE
-                webView.visibility = View.VISIBLE
-            }
-            override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError?) {
-                if (request?.isForMainFrame == true) {
-                    webView.visibility = View.GONE
-                    message.text = "Unable to load Examo Aspirant. Check your internet connection and tap here to retry."
-                    message.visibility = View.VISIBLE
-                }
-            }
-        }
-        if (savedInstanceState == null) loadWebsite() else webView.restoreState(savedInstanceState)
-    }
-
-    private fun loadWebsite() {
-        val url = getString(R.string.examo_website_url)
-        if (url.contains("YOUR-EXAMO-WEBSITE-URL")) {
-            webView.visibility = View.GONE
-            message.text = "Setup required: add your live Examo website URL in strings.xml, then build the APK."
-            message.visibility = View.VISIBLE
-        } else {
-            webView.loadUrl(url)
-        }
-    }
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        webView.saveState(outState)
-        super.onSaveInstanceState(outState)
-    }
-
-    @Suppress("DEPRECATION")
-    override fun onBackPressed() {
-        if (::webView.isInitialized && webView.canGoBack()) webView.goBack()
-        else super.onBackPressed()
-    }
-
-    override fun onDestroy() {
-        if (::webView.isInitialized) webView.destroy()
-        super.onDestroy()
     }
 }
