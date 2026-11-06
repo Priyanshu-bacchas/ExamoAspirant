@@ -7,6 +7,8 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
+import android.animation.ValueAnimator
+import android.view.animation.LinearInterpolator
 import android.view.Gravity
 import android.view.View
 import android.widget.LinearLayout
@@ -52,7 +54,7 @@ class ExamoSplashView(context: Context) : LinearLayout(context) {
         val artParams = LayoutParams(-1, 0, 1f).apply {
             topMargin = dp(if (compact) 0 else 4)
             bottomMargin = dp(if (compact) 0 else 3)
-            weight = if (veryShort) 0.48f else if (compact) 0.62f else 0.78f
+            weight = if (veryShort) 0.42f else if (compact) 0.52f else 0.60f
         }
         addView(art, artParams)
 
@@ -102,6 +104,30 @@ class ExamoSplashView(context: Context) : LinearLayout(context) {
 
 private class StudentOrbitView(context: Context) : View(context) {
     private val p = Paint(Paint.ANTI_ALIAS_FLAG)
+    private var orbitAngle = 0f
+    private var orbitAnimator: ValueAnimator? = null
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        if (orbitAnimator == null) {
+            orbitAnimator = ValueAnimator.ofFloat(0f, 360f).apply {
+                duration = 28000L
+                repeatCount = ValueAnimator.INFINITE
+                interpolator = LinearInterpolator()
+                addUpdateListener {
+                    orbitAngle = it.animatedValue as Float
+                    invalidate()
+                }
+                start()
+            }
+        }
+    }
+
+    override fun onDetachedFromWindow() {
+        orbitAnimator?.cancel()
+        orbitAnimator = null
+        super.onDetachedFromWindow()
+    }
     private fun color(value: Long) = value.toInt()
     private fun line(canvas: Canvas, x1: Float, y1: Float, x2: Float, y2: Float, c: Int, w: Float, scale: Float) {
         p.style = Paint.Style.STROKE
@@ -227,6 +253,15 @@ private class StudentOrbitView(context: Context) : View(context) {
         // Seven feature tiles with real line icons, positioned around the student.
         val pts=arrayOf(floatArrayOf(-151f,-96f),floatArrayOf(0f,-160f),floatArrayOf(151f,-96f),floatArrayOf(-171f,15f),floatArrayOf(171f,15f),floatArrayOf(-132f,125f),floatArrayOf(132f,125f))
         val tints=intArrayOf(0xff8b45ff.toInt(),0xff3777ff.toInt(),0xffffa000.toInt(),0xff00a5e8.toInt(),0xff00b985.toInt(),0xffff5353.toInt(),0xffec4a9a.toInt())
-        for(i in pts.indices) tile(canvas,cx+pts[i][0]*scale,cy+pts[i][1]*scale,i,tints[i],scale)
+        val radians = Math.toRadians(orbitAngle.toDouble())
+        val cosA = kotlin.math.cos(radians).toFloat()
+        val sinA = kotlin.math.sin(radians).toFloat()
+        for(i in pts.indices) {
+            val ox = pts[i][0] * scale
+            val oy = pts[i][1] * scale
+            val x = cx + ox*cosA - oy*sinA
+            val y = cy + ox*sinA + oy*cosA
+            tile(canvas,x,y,i,tints[i],scale)
+        }
     }
 }
