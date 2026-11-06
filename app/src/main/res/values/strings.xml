@@ -2,4 +2,5 @@
 <resources>
     <string name="app_name">Examo Aspirant</string>
     <string name="examo_website_url">https://examoaspirants.co.in/</string>
+    <string name="examo_api_url">https://examoapp.onrender.com/api</string>
 </resources>
