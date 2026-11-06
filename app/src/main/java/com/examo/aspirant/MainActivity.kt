@@ -171,68 +171,90 @@ class MainActivity : Activity() {
               if (window.__examoAndroidNavInstalled) return;
               window.__examoAndroidNavInstalled = true;
 
-              var style = document.createElement('style');
-              style.id = 'examo-android-nav-style';
-              style.textContent = '@media(max-width:600px){' +
-                '.sidebar{position:fixed!important;left:0!important;top:0!important;bottom:0!important;width:min(82vw,300px)!important;max-width:300px!important;min-height:100dvh!important;height:100dvh!important;overflow-y:auto!important;overflow-x:hidden!important;transform:translateX(-105%)!important;transition:transform .25s ease!important;z-index:10002!important;visibility:visible!important;pointer-events:auto!important;-webkit-overflow-scrolling:touch!important}' +
-                '.sidebar.examo-mobile-open{transform:translateX(0)!important}' +
+              var css = document.createElement('style');
+              css.id = 'examo-android-nav-style';
+              css.textContent = '@media(max-width:600px){' +
+                '.sidebar{position:fixed!important;left:0!important;top:0!important;bottom:0!important;width:min(82vw,300px)!important;max-width:300px!important;min-height:100dvh!important;height:100dvh!important;overflow-y:auto!important;overflow-x:hidden!important;transform:translate3d(-105%,0,0)!important;transition:transform .25s ease!important;z-index:10002!important;visibility:visible!important;pointer-events:auto!important;-webkit-overflow-scrolling:touch!important;display:flex!important}' +
+                '.sidebar.examo-mobile-open{transform:translate3d(0,0,0)!important}' +
                 '.main-content{width:100%!important;margin-left:0!important;min-width:0!important}' +
-                '.mobile-menu{display:flex!important;align-items:center!important;justify-content:center!important;width:46px!important;height:46px!important;min-width:46px!important;cursor:pointer!important;touch-action:manipulation!important;position:relative!important;z-index:10003!important;border-radius:10px!important;pointer-events:auto!important}' +
-                '.mobile-menu:active{background:#eef2ff!important}' +
+                '.mobile-menu{display:flex!important;align-items:center!important;justify-content:center!important;width:48px!important;height:48px!important;min-width:48px!important;cursor:pointer!important;touch-action:manipulation!important;position:relative!important;z-index:10003!important;border-radius:10px!important;pointer-events:auto!important;user-select:none!important;-webkit-tap-highlight-color:transparent!important}' +
+                '.mobile-menu svg{pointer-events:none!important}' +
                 '.examo-mobile-backdrop{position:fixed!important;inset:0!important;background:rgba(15,23,42,.50)!important;z-index:10001!important;display:none!important;touch-action:manipulation!important}' +
                 '.examo-mobile-backdrop.open{display:block!important}' +
                 '.topbar{position:sticky!important;top:0!important;z-index:1000!important}.content-area{min-width:0!important}}';
-              (document.head || document.documentElement).appendChild(style);
+              (document.head || document.documentElement).appendChild(css);
 
-              function getSidebar() { return document.querySelector('.sidebar'); }
-              function getBackdrop() {
-                var el = document.querySelector('.examo-mobile-backdrop');
-                if (!el) {
-                  el = document.createElement('div');
-                  el.className = 'examo-mobile-backdrop';
+              function sidebar(){ return document.querySelector('.sidebar'); }
+              function backdrop(){
+                var el=document.querySelector('.examo-mobile-backdrop');
+                if(!el){
+                  el=document.createElement('div');
+                  el.className='examo-mobile-backdrop';
                   document.body.appendChild(el);
-                  el.addEventListener('click', closeMenu);
+                  el.addEventListener('click',closeMenu);
+                  el.addEventListener('touchend',function(e){e.preventDefault();closeMenu();},{passive:false});
                 }
                 return el;
               }
-              function closeMenu() {
-                var sidebar = getSidebar();
-                if (sidebar) sidebar.classList.remove('examo-mobile-open');
-                var backdrop = document.querySelector('.examo-mobile-backdrop');
-                if (backdrop) backdrop.classList.remove('open');
-                document.body.style.overflow = '';
+              function closeMenu(){
+                var s=sidebar();
+                if(s)s.classList.remove('examo-mobile-open');
+                var b=document.querySelector('.examo-mobile-backdrop');
+                if(b)b.classList.remove('open');
+                document.body.style.overflow='';
               }
-              function toggleMenu() {
-                var sidebar = getSidebar();
-                if (!sidebar) return;
-                var backdrop = getBackdrop();
-                var open = !sidebar.classList.contains('examo-mobile-open');
-                sidebar.classList.toggle('examo-mobile-open', open);
-                backdrop.classList.toggle('open', open);
-                document.body.style.overflow = open ? 'hidden' : '';
+              function toggleMenu(){
+                var s=sidebar();
+                if(!s)return;
+                var b=backdrop();
+                var open=!s.classList.contains('examo-mobile-open');
+                s.classList.toggle('examo-mobile-open',open);
+                b.classList.toggle('open',open);
+                document.body.style.overflow=open?'hidden':'';
               }
 
-              // Delegated handlers work even when React mounts or replaces the header later.
-              document.addEventListener('click', function (event) {
-                var menu = event.target && event.target.closest ? event.target.closest('.mobile-menu') : null;
-                if (menu) {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  toggleMenu();
-                  return;
+              var lastToggle=0;
+              function handleMenuEvent(e){
+                var target=e.target;
+                var menu=target && target.closest ? target.closest('.mobile-menu') : null;
+                if(!menu)return;
+                var now=Date.now();
+                if(now-lastToggle<450)return;
+                lastToggle=now;
+                e.preventDefault();
+                e.stopPropagation();
+                if(e.stopImmediatePropagation)e.stopImmediatePropagation();
+                toggleMenu();
+              }
+              // Bind directly to the real React header node and rebind if React remounts it.
+              function bindMenu(){
+                var menu=document.querySelector('.mobile-menu');
+                if(!menu || menu.dataset.examoAndroidBound==='1')return;
+                menu.dataset.examoAndroidBound='1';
+                menu.addEventListener('click',handleMenuEvent,true);
+                menu.addEventListener('touchend',handleMenuEvent,{capture:true,passive:false});
+                menu.addEventListener('pointerup',handleMenuEvent,true);
+                menu.setAttribute('role','button');
+                menu.setAttribute('aria-label','Open navigation menu');
+                menu.setAttribute('tabindex','0');
+              }
+              document.addEventListener('click',handleMenuEvent,true);
+              document.addEventListener('touchend',handleMenuEvent,{capture:true,passive:false});
+              document.addEventListener('pointerup',handleMenuEvent,true);
+              document.addEventListener('click',function(e){
+                var item=e.target&&e.target.closest?e.target.closest('.sidebar-item,.sidebar-subitem'):null;
+                if(item)closeMenu();
+              },true);
+              document.addEventListener('keydown',function(e){
+                if(e.key==='Escape')closeMenu();
+                if((e.key==='Enter'||e.key===' ') && document.activeElement && document.activeElement.classList.contains('mobile-menu')){
+                  e.preventDefault();toggleMenu();
                 }
-                var navItem = event.target && event.target.closest ? event.target.closest('.sidebar-item, .sidebar-subitem') : null;
-                if (navItem) closeMenu();
-              }, true);
-
-              document.addEventListener('keydown', function (event) {
-                if (event.key === 'Escape') closeMenu();
               });
-              window.addEventListener('resize', function () {
-                if (window.innerWidth > 600) closeMenu();
-              });
-              window.__examoAndroidCloseMenu = closeMenu;
-              getBackdrop();
+              window.addEventListener('resize',function(){if(window.innerWidth>600)closeMenu();});
+              bindMenu();
+              new MutationObserver(bindMenu).observe(document.documentElement,{childList:true,subtree:true});
+              window.__examoAndroidCloseMenu=closeMenu;
             })();
         """.trimIndent()
         view?.evaluateJavascript(script, null)
