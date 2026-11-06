@@ -131,6 +131,7 @@ class MainActivity : Activity() {
                 override fun onPageFinished(view: WebView?, url: String?) {
                     super.onPageFinished(view, url)
                     installMobileNavigationFix(view)
+                    hideGoogleSignInInApp(view)
                 }
             }
 
@@ -354,6 +355,28 @@ class MainActivity : Activity() {
                 Toast.makeText(this, "Storage permission is required to save this download.", Toast.LENGTH_LONG).show()
             }
         }
+    }
+
+    private fun hideGoogleSignInInApp(view: WebView?) {
+        val script = """
+            (function () {
+              function hideGoogleButton() {
+                document.querySelectorAll('button,a,[role="button"]').forEach(function (el) {
+                  var label = (el.innerText || el.textContent || '').trim().toLowerCase();
+                  if (label.indexOf('continue with google') !== -1 || label === 'google') {
+                    el.style.setProperty('display', 'none', 'important');
+                    el.setAttribute('aria-hidden', 'true');
+                  }
+                });
+              }
+              hideGoogleButton();
+              if (!window.__examoHideGoogleObserver) {
+                window.__examoHideGoogleObserver = new MutationObserver(hideGoogleButton);
+                window.__examoHideGoogleObserver.observe(document.documentElement, {childList:true,subtree:true});
+              }
+            })();
+        """.trimIndent()
+        view?.evaluateJavascript(script, null)
     }
 
     private fun installMobileNavigationFix(view: WebView?) {
