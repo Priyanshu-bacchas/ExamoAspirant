@@ -27,7 +27,9 @@ class ExamoSplashView(context: Context) : LinearLayout(context) {
     init {
         orientation = VERTICAL
         gravity = Gravity.CENTER_HORIZONTAL
-        setPadding(dp(24), dp(28), dp(24), dp(18))
+        val compact = resources.displayMetrics.heightPixels / resources.displayMetrics.density < 760f
+        val horizontalPad = if (compact) 18 else 22
+        setPadding(dp(horizontalPad), dp(if (compact) 16 else 22), dp(horizontalPad), dp(if (compact) 10 else 14))
         background = GradientDrawable(GradientDrawable.Orientation.TL_BR,
             intArrayOf(Color.rgb(244,248,255), Color.rgb(211,229,252))).apply { cornerRadius = dp(28).toFloat() }
 
@@ -42,16 +44,20 @@ class ExamoSplashView(context: Context) : LinearLayout(context) {
         brand.addView(label("Examo", 23f, Color.rgb(23,48,99), true))
         brand.addView(label("Student Management", 11f, Color.rgb(75,98,140)))
         header.addView(brand)
-        addView(header, LayoutParams(-1, dp(58)))
+        addView(header, LayoutParams(-1, dp(if (compact) 48 else 54)))
 
         val art = StudentOrbitView(context)
-        val artParams = LayoutParams(-1, 0, 1f).apply { topMargin = dp(6); bottomMargin = dp(4) }
+        val artParams = LayoutParams(-1, 0, 1f).apply {
+            topMargin = dp(if (compact) 0 else 4)
+            bottomMargin = dp(if (compact) 0 else 3)
+            weight = if (compact) 0.82f else 1f
+        }
         addView(art, artParams)
 
-        addView(label("Your exams, beautifully organised.", 20f, Color.rgb(29,48,91), true),
-            LayoutParams(-1, dp(38)))
-        addView(label("Exam forms, schedules, preparation and subjects — everything\na student needs, in one place.", 12f, Color.rgb(76,94,127)),
-            LayoutParams(-1, dp(48)))
+        addView(label("Your exams, beautifully organised.", if (compact) 18f else 19f, Color.rgb(29,48,91), true),
+            LayoutParams(-1, dp(if (compact) 32 else 36)))
+        addView(label("Exam forms, schedules, preparation and subjects — everything\na student needs, in one place.", if (compact) 11f else 12f, Color.rgb(76,94,127)),
+            LayoutParams(-1, dp(if (compact) 42 else 46)))
 
         val chips = LinearLayout(context).apply { gravity = Gravity.CENTER; orientation = HORIZONTAL }
         listOf("Exam Forms", "Schedules", "Preparation").forEach { text ->
@@ -62,17 +68,31 @@ class ExamoSplashView(context: Context) : LinearLayout(context) {
             val lp = LayoutParams(-2, -2).apply { marginStart = dp(4); marginEnd = dp(4) }
             chips.addView(chip, lp)
         }
-        addView(chips, LayoutParams(-1, dp(42)))
+        addView(chips, LayoutParams(-1, dp(if (compact) 36 else 40)))
 
-        val swipe = label("Swipe up to get started  ↑", 13f, Color.rgb(31,64,132), true).apply {
-            background = rounded(Color.argb(45,255,255,255), 22)
-            setPadding(dp(18), dp(10), dp(18), dp(10))
+        // A visible grab-handle makes the swipe gesture obvious.
+        val swipeArea = LinearLayout(context).apply {
+            orientation = VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(0, dp(if (compact) 3 else 5), 0, 0)
+        }
+        val handle = View(context).apply {
+            background = rounded(Color.rgb(104, 132, 181), 8)
+            alpha = 0.72f
+        }
+        swipeArea.addView(handle, LayoutParams(dp(54), dp(4)).apply {
+            bottomMargin = dp(7)
+        })
+        val swipe = label("Swipe up to get started  ↑", if (compact) 12f else 13f, Color.rgb(31,64,132), true).apply {
+            background = rounded(Color.argb(55,255,255,255), 22)
+            setPadding(dp(18), dp(if (compact) 7 else 8), dp(18), dp(if (compact) 7 else 8))
             alpha = 0.95f
         }
-        addView(swipe, LayoutParams(-2, dp(42)))
+        swipeArea.addView(swipe, LayoutParams(-2, dp(if (compact) 34 else 38)))
+        addView(swipeArea, LayoutParams(-1, dp(if (compact) 45 else 50)))
         post {
-            swipe.animate().alpha(0.45f).setDuration(850).withEndAction {
-                swipe.animate().alpha(1f).setDuration(850).start()
+            handle.animate().alpha(0.35f).setDuration(850).withEndAction {
+                handle.animate().alpha(0.85f).setDuration(850).start()
             }.start()
         }
     }
