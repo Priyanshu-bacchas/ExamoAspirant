@@ -2,6 +2,14 @@ package com.examo.aspirant
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.DownloadManager
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import android.os.Environment
+import android.webkit.URLUtil
+import android.webkit.ValueCallback
+import android.view.View
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.graphics.Color
@@ -40,6 +48,23 @@ class MainActivity : Activity() {
     private var popupWebView: WebView? = null
     private val activityScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var googleLoginInProgress = false
+    private var fileChooserCallback: ValueCallback<Array<Uri>>? = null
+    private var customView: View? = null
+    private var customViewCallback: WebChromeClient.CustomViewCallback? = null
+    private var originalSystemUiVisibility: Int = 0
+    private var pendingDownload: DownloadInfo? = null
+
+    private data class DownloadInfo(
+        val url: String,
+        val userAgent: String?,
+        val contentDisposition: String?,
+        val mimeType: String?
+    )
+
+    companion object {
+        private const val FILE_CHOOSER_REQUEST = 4101
+        private const val STORAGE_PERMISSION_REQUEST = 4102
+    }
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -94,7 +119,45 @@ class MainActivity : Activity() {
                 }
             }
 
+            setDownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
+                enqueueDownload(url, userAgent, contentDisposition, mimeType)
+            }
+
             webChromeClient = object : WebChromeClient() {
+                override fun onShowFileChooser(view: WebView?, callback: ValueCallback<Array<Uri>>?, params: FileChooserParams?): Boolean {
+                    fileChooserCallback?.onReceiveValue(null)
+                    fileChooserCallback = callback
+                    return try {
+                        val intent = params?.createIntent() ?: Intent(Intent.ACTION_GET_CONTENT).apply { type = "*/*" }
+                        startActivityForResult(intent, FILE_CHOOSER_REQUEST)
+                        true
+                    } catch (_: Exception) {
+                        fileChooserCallback?.onReceiveValue(null)
+                        fileChooserCallback = null
+                        false
+                    }
+                }
+
+                override fun onShowCustomView(view: View?, callback: CustomViewCallback?) {
+                    if (view == null || customView != null) {
+                        callback?.onCustomViewHidden()
+                        return
+                    }
+                    customView = view
+                    customViewCallback = callback
+                    originalSystemUiVisibility = window.decorView.systemUiVisibility
+                    webView.visibility = View.GONE
+                    root.addView(view, FrameLayout.LayoutParams(-1, -1))
+                    window.decorView.systemUiVisibility =
+                        View.SYSTEM_UI_FLAG_FULLSCREEN or
+                        View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
+                        View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
+                        View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                }
+
+                override fun onHideCustomView() {
+                    hideCustomView()
+                }
                 override fun onCreateWindow(view: WebView?, isDialog: Boolean, isUserGesture: Boolean, resultMsg: android.os.Message?): Boolean {
                     val popup = createPopupWebView()
                     popupWebView = popup
@@ -136,8 +199,10 @@ class MainActivity : Activity() {
               window.__examoNativeGoogleHook = true;
               document.addEventListener('click', function (event) {
                 var button = event.target && event.target.closest
-                  ? event.target.closest('.btn-google') : null;
+                  ? event.target.closest('.ex-btn-outline,.btn-google') : null;
                 if (!button || !window.ExamoAndroid) return;
+                var label = (button.innerText || button.textContent || '').toLowerCase();
+                if (label.indexOf('continue with google') === -1) return;
                 event.preventDefault();
                 event.stopPropagation();
                 if (event.stopImmediatePropagation) event.stopImmediatePropagation();
@@ -296,6 +361,93 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun isPdfUrl(uri: Uri): Boolean {
+        val path = (uri.lastPathSegment ?: uri.toString()).lowercase()
+        return path.endsWith(".pdf") || path.contains(".pdf/")
+    }
+
+    private fun openPdf(uri: Uri) {
+        try {
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, "application/pdf")
+                addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            startActivity(Intent.createChooser(intent, "Open PDF"))
+        } catch (_: Exception) {
+            openExternal(uri)
+        }
+    }
+
+    private fun enqueueDownload(url: String, userAgent: String?, contentDisposition: String?, mimeType: String?) {
+        val info = DownloadInfo(url, userAgent, contentDisposition, mimeType)
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
+            checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
+        ) {
+            pendingDownload = info
+            requestPermissions(arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), STORAGE_PERMISSION_REQUEST)
+            return
+        }
+        startDownload(info)
+    }
+
+    private fun startDownload(info: DownloadInfo) {
+        try {
+            val filename = URLUtil.guessFileName(info.url, info.contentDisposition, info.mimeType)
+            val request = DownloadManager.Request(Uri.parse(info.url)).apply {
+                setTitle(filename)
+                setDescription("Downloading from Examo")
+                setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                setAllowedOverMetered(true)
+                setAllowedOverRoaming(false)
+                info.mimeType?.let { setMimeType(it) }
+                info.userAgent?.let { addRequestHeader("User-Agent", it) }
+                CookieManager.getInstance().getCookie(info.url)?.let { addRequestHeader("Cookie", it) }
+                setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename)
+            }
+            (getSystemService(DOWNLOAD_SERVICE) as DownloadManager).enqueue(request)
+            Toast.makeText(this, "Download started: " + filename, Toast.LENGTH_LONG).show()
+        } catch (error: Exception) {
+            Toast.makeText(this, error.message ?: "Could not download this file.", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun hideCustomView() {
+        val view = customView ?: return
+        root.removeView(view)
+        customView = null
+        webView.visibility = View.VISIBLE
+        window.decorView.systemUiVisibility = originalSystemUiVisibility
+        customViewCallback?.onCustomViewHidden()
+        customViewCallback = null
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (requestCode == FILE_CHOOSER_REQUEST) {
+            val callback = fileChooserCallback
+            fileChooserCallback = null
+            val results = if (resultCode == RESULT_OK && data != null) {
+                WebChromeClient.FileChooserParams.parseResult(resultCode, data)
+            } else null
+            callback?.onReceiveValue(results)
+            return
+        }
+        super.onActivityResult(requestCode, resultCode, data)
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == STORAGE_PERMISSION_REQUEST) {
+            val info = pendingDownload
+            pendingDownload = null
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED && info != null) {
+                startDownload(info)
+            } else {
+                Toast.makeText(this, "Storage permission is required to save this download.", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
     private fun installMobileNavigationFix(view: WebView?) {
         val script = """
             (function () {
@@ -366,6 +518,7 @@ class MainActivity : Activity() {
 
     @Suppress("DEPRECATION")
     override fun onBackPressed() {
+        if (customView != null) { hideCustomView(); return }
         val popup = popupWebView
         if (popup != null) {
             root.removeView(popup)
@@ -389,6 +542,9 @@ class MainActivity : Activity() {
     }
 
     override fun onDestroy() {
+        fileChooserCallback?.onReceiveValue(null)
+        fileChooserCallback = null
+        if (customView != null) hideCustomView()
         activityScope.cancel()
         popupWebView?.destroy()
         if (::webView.isInitialized) webView.destroy()
