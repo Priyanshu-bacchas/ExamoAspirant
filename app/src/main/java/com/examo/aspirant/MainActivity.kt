@@ -199,7 +199,6 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         if (::webView.isInitialized) webView.onResume()
-        WebView.resumeTimers()
     }
 
     override fun onPause() {
