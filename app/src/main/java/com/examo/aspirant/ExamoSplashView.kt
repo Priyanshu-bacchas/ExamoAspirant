@@ -111,12 +111,12 @@ private class StudentOrbitView(context: Context) : View(context) {
         super.onAttachedToWindow()
         if (orbitAnimator == null) {
             orbitAnimator = ValueAnimator.ofFloat(0f, 360f).apply {
-                duration = 28000L
+                duration = 12000L
                 repeatCount = ValueAnimator.INFINITE
                 interpolator = LinearInterpolator()
                 addUpdateListener {
                     orbitAngle = it.animatedValue as Float
-                    invalidate()
+                    postInvalidateOnAnimation()
                 }
                 start()
             }
@@ -253,15 +253,17 @@ private class StudentOrbitView(context: Context) : View(context) {
         // Seven feature tiles with real line icons, positioned around the student.
         val pts=arrayOf(floatArrayOf(-151f,-96f),floatArrayOf(0f,-160f),floatArrayOf(151f,-96f),floatArrayOf(-171f,15f),floatArrayOf(171f,15f),floatArrayOf(-132f,125f),floatArrayOf(132f,125f))
         val tints=intArrayOf(0xff8b45ff.toInt(),0xff3777ff.toInt(),0xffffa000.toInt(),0xff00a5e8.toInt(),0xff00b985.toInt(),0xffff5353.toInt(),0xffec4a9a.toInt())
+        // Rotate the complete seven-tile constellation around the student.
+        // Keep each tile upright while its CENTER travels a full 360-degree orbit.
         val radians = Math.toRadians(orbitAngle.toDouble())
         val cosA = kotlin.math.cos(radians).toFloat()
         val sinA = kotlin.math.sin(radians).toFloat()
-        for(i in pts.indices) {
+        for (i in pts.indices) {
             val ox = pts[i][0] * scale
             val oy = pts[i][1] * scale
-            val x = cx + ox*cosA - oy*sinA
-            val y = cy + ox*sinA + oy*cosA
-            tile(canvas,x,y,i,tints[i],scale)
+            val orbitX = ox * cosA - oy * sinA
+            val orbitY = ox * sinA + oy * cosA
+            tile(canvas, cx + orbitX, cy + orbitY, i, tints[i], scale)
         }
     }
 }
