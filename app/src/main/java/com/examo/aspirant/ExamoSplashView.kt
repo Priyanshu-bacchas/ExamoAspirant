@@ -102,56 +102,131 @@ class ExamoSplashView(context: Context) : LinearLayout(context) {
 
 private class StudentOrbitView(context: Context) : View(context) {
     private val p = Paint(Paint.ANTI_ALIAS_FLAG)
+    private fun color(value: Long) = value.toInt()
+    private fun line(canvas: Canvas, x1: Float, y1: Float, x2: Float, y2: Float, c: Int, w: Float, scale: Float) {
+        p.style = Paint.Style.STROKE
+        p.strokeCap = Paint.Cap.ROUND
+        p.strokeJoin = Paint.Join.ROUND
+        p.strokeWidth = w * scale
+        p.color = c
+        canvas.drawLine(x1, y1, x2, y2, p)
+        p.style = Paint.Style.FILL
+    }
+    private fun tile(canvas: Canvas, x: Float, y: Float, type: Int, tint: Int, scale: Float) {
+        p.color = Color.WHITE
+        p.setShadowLayer(10f * scale, 0f, 5f * scale, 0x26365C9A)
+        canvas.drawRoundRect(x-27*scale,y-27*scale,x+27*scale,y+27*scale,15f*scale,15f*scale,p)
+        p.clearShadowLayer()
+        p.color=tint
+        p.style=Paint.Style.STROKE
+        p.strokeWidth=2.4f*scale
+        p.strokeCap=Paint.Cap.ROUND
+        p.strokeJoin=Paint.Join.ROUND
+        when(type) {
+            0 -> { // open book
+                val path=Path().apply {
+                    moveTo(x,y-10*scale); cubicTo(x-10*scale,y-14*scale,x-17*scale,y-12*scale,x-17*scale,y-8*scale)
+                    lineTo(x-17*scale,y+10*scale); cubicTo(x-9*scale,y+7*scale,x-4*scale,y+8*scale,x,y+12*scale)
+                    moveTo(x,y-10*scale); cubicTo(x+10*scale,y-14*scale,x+17*scale,y-12*scale,x+17*scale,y-8*scale)
+                    lineTo(x+17*scale,y+10*scale); cubicTo(x+9*scale,y+7*scale,x+4*scale,y+8*scale,x,y+12*scale)
+                    moveTo(x,y-10*scale); lineTo(x,y+12*scale)
+                }; canvas.drawPath(path,p)
+            }
+            1 -> { // clock
+                canvas.drawCircle(x,y,10*scale,p); line(canvas,x,y,x,y-6*scale,tint,2.3f,scale); line(canvas,x,y,x+5*scale,y+3*scale,tint,2.3f,scale)
+            }
+            2 -> { // calendar
+                canvas.drawRoundRect(x-10*scale,y-10*scale,x+10*scale,y+11*scale,2*scale,2*scale,p)
+                line(canvas,x-10*scale,y-4*scale,x+10*scale,y-4*scale,tint,2f,scale)
+                line(canvas,x-5*scale,y-13*scale,x-5*scale,y-8*scale,tint,2.5f,scale)
+                line(canvas,x+5*scale,y-13*scale,x+5*scale,y-8*scale,tint,2.5f,scale)
+                for(row in 0..1) for(col in 0..2) canvas.drawCircle(x+(-5+col*5)*scale,y+(1+row*5)*scale,1.1f*scale,p)
+            }
+            3 -> { // laptop
+                canvas.drawRoundRect(x-10*scale,y-10*scale,x+10*scale,y+7*scale,2*scale,2*scale,p)
+                line(canvas,x-14*scale,y+11*scale,x+14*scale,y+11*scale,tint,2.5f,scale)
+                line(canvas,x-10*scale,y+7*scale,x-13*scale,y+11*scale,tint,2f,scale)
+                line(canvas,x+10*scale,y+7*scale,x+13*scale,y+11*scale,tint,2f,scale)
+            }
+            4 -> { // phone
+                canvas.drawRoundRect(x-7*scale,y-13*scale,x+7*scale,y+13*scale,2.5f*scale,2.5f*scale,p)
+                canvas.drawCircle(x,y+9*scale,1f*scale,p)
+            }
+            5 -> { // pencil
+                val path=Path().apply { moveTo(x-10*scale,y+9*scale); lineTo(x+8*scale,y-9*scale); lineTo(x+12*scale,y-5*scale); lineTo(x-6*scale,y+13*scale); close() }
+                canvas.drawPath(path,p)
+                line(canvas,x-10*scale,y+9*scale,x-12*scale,y+14*scale,tint,2f,scale)
+                line(canvas,x+6*scale,y-7*scale,x+10*scale,y-3*scale,tint,1.5f,scale)
+            }
+            6 -> { // medal
+                val path=Path().apply { moveTo(x-7*scale,y-13*scale); lineTo(x-3*scale,y-3*scale); lineTo(x,y-6*scale); lineTo(x+3*scale,y-3*scale); lineTo(x+7*scale,y-13*scale) }
+                canvas.drawPath(path,p)
+                canvas.drawCircle(x,y+3*scale,7*scale,p)
+                line(canvas,x-3*scale,y+9*scale,x-5*scale,y+16*scale,tint,2f,scale)
+                line(canvas,x+3*scale,y+9*scale,x+5*scale,y+16*scale,tint,2f,scale)
+            }
+        }
+        p.style=Paint.Style.FILL
+    }
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        val cx = width / 2f
-        val cy = height * 0.49f
-        val scale = (width.coerceAtMost(height).toFloat() / 430f).coerceAtLeast(0.65f)
-        p.style = Paint.Style.STROKE; p.strokeWidth = 1.5f * scale; p.color = Color.rgb(177,207,250)
-        canvas.drawCircle(cx, cy, 165f*scale, p); p.pathEffect = android.graphics.DashPathEffect(floatArrayOf(3f,5f),0f)
-        canvas.drawCircle(cx, cy, 185f*scale, p); p.pathEffect = null
-
-        p.style = Paint.Style.FILL
-        p.color = Color.rgb(255,255,255); p.setShadowLayer(15f*scale,0f,6f*scale,0x22365C9A)
-        canvas.drawCircle(cx,cy,132f*scale,p); p.clearShadowLayer()
-
-        // Student shoulders and shirt
-        p.color = Color.rgb(28,57,112)
-        val shoulders = Path().apply {
-            moveTo(cx-88*scale,cy+119*scale); cubicTo(cx-80*scale,cy+60*scale,cx-42*scale,cy+48*scale,cx,cy+50*scale)
-            cubicTo(cx+46*scale,cy+48*scale,cx+80*scale,cy+65*scale,cx+88*scale,cy+119*scale); close()
-        }
-        canvas.drawPath(shoulders,p)
-        p.color = Color.rgb(245,248,255)
-        val shirt=Path().apply{moveTo(cx-25*scale,cy+55*scale);lineTo(cx,cy+105*scale);lineTo(cx+25*scale,cy+55*scale);close()}
-        canvas.drawPath(shirt,p)
-
-        // Neck and face
-        p.color=Color.rgb(245,190,151); canvas.drawRoundRect(cx-13*scale,cy+18*scale,cx+13*scale,cy+62*scale,8f*scale,8f*scale,p)
-        canvas.drawCircle(cx,cy-7*scale,37f*scale,p)
-        p.color=Color.rgb(39,58,91); canvas.drawCircle(cx-13*scale,cy-12*scale,3f*scale,p); canvas.drawCircle(cx+13*scale,cy-12*scale,3f*scale,p)
-        p.style=Paint.Style.STROKE;p.strokeWidth=2.5f*scale;p.strokeCap=Paint.Cap.ROUND
-        p.color=Color.rgb(39,58,91);canvas.drawArc(cx-13*scale,cy-2*scale,cx+13*scale,cy+15*scale,15f,150f,false,p)
+        val cx=width/2f
+        val cy=height*.49f
+        val scale=(width.coerceAtMost(height).toFloat()/430f).coerceIn(.55f,1.12f)
+        // Soft orbit rings and ambient dots
+        p.style=Paint.Style.STROKE; p.strokeWidth=1.3f*scale; p.color=Color.rgb(188,211,247)
+        canvas.drawCircle(cx,cy,166f*scale,p)
+        p.pathEffect=android.graphics.DashPathEffect(floatArrayOf(2.5f*scale,4.5f*scale),0f)
+        canvas.drawCircle(cx,cy,187f*scale,p); p.pathEffect=null
         p.style=Paint.Style.FILL
-
-        // Graduation cap
-        p.color=Color.rgb(17,45,91)
-        val cap=Path().apply{moveTo(cx-70*scale,cy-48*scale);lineTo(cx,cy-75*scale);lineTo(cx+70*scale,cy-48*scale);lineTo(cx,cy-22*scale);close()}
-        canvas.drawPath(cap,p)
-        p.color=Color.rgb(238,170,47);p.strokeWidth=3f*scale
-        canvas.drawLine(cx+45*scale,cy-48*scale,cx+58*scale,cy-5*scale,p)
-        canvas.drawCircle(cx+58*scale,cy-2*scale,5f*scale,p)
-
-        // Floating feature tiles
-        val points=arrayOf(floatArrayOf(-150f,-95f),floatArrayOf(0f,-160f),floatArrayOf(150f,-95f),floatArrayOf(-170f,15f),floatArrayOf(170f,15f),floatArrayOf(-130f,125f),floatArrayOf(130f,125f))
-        val glyphs=arrayOf("▣","◷","▦","▱","▯","✎","☆")
-        val colors=intArrayOf(0xff8b45ff.toInt(),0xff3777ff.toInt(),0xffffa000.toInt(),0xff00a5e8.toInt(),0xff00b985.toInt(),0xffff5353.toInt(),0xffec4a9a.toInt())
-        for(i in points.indices){
-            val x=cx+points[i][0]*scale; val y=cy+points[i][1]*scale
-            p.color=Color.WHITE;p.setShadowLayer(9f*scale,0f,4f*scale,0x22365C9A)
-            canvas.drawRoundRect(x-25*scale,y-25*scale,x+25*scale,y+25*scale,14f*scale,14f*scale,p);p.clearShadowLayer()
-            p.color=colors[i];p.textSize=25f*scale;p.typeface=Typeface.DEFAULT_BOLD;p.textAlign=Paint.Align.CENTER
-            canvas.drawText(glyphs[i],x,y+8*scale,p)
+        val dots=arrayOf(floatArrayOf(-112f,-143f),floatArrayOf(146f,-94f),floatArrayOf(-169f,40f),floatArrayOf(170f,50f),floatArrayOf(-8f,184f))
+        dots.forEachIndexed { i,d ->
+            p.color=if(i%2==0) Color.rgb(143,190,249) else Color.rgb(117,174,245)
+            canvas.drawCircle(cx+d[0]*scale,cy+d[1]*scale,(if(i==4)4f else 2.6f)*scale,p)
         }
+        // Central soft blue halo
+        p.color=Color.rgb(222,235,255); p.setShadowLayer(18f*scale,0f,5f*scale,0x22365C9A)
+        canvas.drawCircle(cx,cy,132f*scale,p); p.clearShadowLayer()
+        // Body with a gentle navy-to-blue fade
+        val body=Path().apply {
+            moveTo(cx-88*scale,cy+119*scale)
+            cubicTo(cx-84*scale,cy+65*scale,cx-50*scale,cy+47*scale,cx-22*scale,cy+49*scale)
+            lineTo(cx+22*scale,cy+49*scale)
+            cubicTo(cx+57*scale,cy+48*scale,cx+84*scale,cy+68*scale,cx+88*scale,cy+119*scale)
+            close()
+        }
+        p.shader=android.graphics.LinearGradient(cx,cy+48*scale,cx,cy+122*scale,
+            intArrayOf(Color.rgb(25,53,111),Color.rgb(37,73,137),Color.rgb(190,211,244)),null,android.graphics.Shader.TileMode.CLAMP)
+        canvas.drawPath(body,p); p.shader=null
+        // Shirt collar and central tie
+        p.color=Color.rgb(239,246,255)
+        val collar=Path().apply { moveTo(cx-25*scale,cy+52*scale); lineTo(cx,cy+103*scale); lineTo(cx+25*scale,cy+52*scale); lineTo(cx+10*scale,cy+48*scale); lineTo(cx-10*scale,cy+48*scale); close() }
+        canvas.drawPath(collar,p)
+        p.color=Color.rgb(24,52,108)
+        val tie=Path().apply { moveTo(cx-5*scale,cy+62*scale); lineTo(cx+5*scale,cy+62*scale); lineTo(cx+8*scale,cy+88*scale); lineTo(cx,cy+101*scale); lineTo(cx-8*scale,cy+88*scale); close() }
+        canvas.drawPath(tie,p)
+        // Neck, ears and face
+        p.color=Color.rgb(245,190,153)
+        canvas.drawRoundRect(cx-13*scale,cy+15*scale,cx+13*scale,cy+65*scale,8f*scale,8f*scale,p)
+        canvas.drawCircle(cx-38*scale,cy-5*scale,8f*scale,p); canvas.drawCircle(cx+38*scale,cy-5*scale,8f*scale,p)
+        canvas.drawOval(cx-34*scale,cy-47*scale,cx+34*scale,cy+31*scale,p)
+        p.color=Color.rgb(255,207,190)
+        canvas.drawCircle(cx-22*scale,cy+8*scale,6f*scale,p); canvas.drawCircle(cx+22*scale,cy+8*scale,6f*scale,p)
+        p.color=Color.rgb(35,54,87)
+        canvas.drawCircle(cx-13*scale,cy-12*scale,2.8f*scale,p); canvas.drawCircle(cx+13*scale,cy-12*scale,2.8f*scale,p)
+        p.style=Paint.Style.STROKE; p.strokeWidth=2.3f*scale; p.strokeCap=Paint.Cap.ROUND
+        canvas.drawArc(cx-13*scale,cy-1*scale,cx+13*scale,cy+16*scale,15f,150f,false,p); p.style=Paint.Style.FILL
+        // Graduation cap with gold tassel
+        p.color=Color.rgb(17,43,88)
+        val cap=Path().apply { moveTo(cx-82*scale,cy-49*scale); lineTo(cx,cy-78*scale); lineTo(cx+82*scale,cy-49*scale); lineTo(cx,cy-18*scale); close() }
+        canvas.drawPath(cap,p)
+        val capBand=Path().apply { moveTo(cx-55*scale,cy-38*scale); quadTo(cx,cy-14*scale,cx+55*scale,cy-38*scale); lineTo(cx+48*scale,cy-18*scale); quadTo(cx,cy+1*scale,cx-48*scale,cy-18*scale); close() }
+        canvas.drawPath(capBand,p)
+        line(canvas,cx+36*scale,cy-48*scale,cx+53*scale,cy-3*scale,Color.rgb(245,177,47),2.6f,scale)
+        p.color=Color.rgb(245,177,47); canvas.drawCircle(cx+53*scale,cy-1*scale,5f*scale,p)
+        // Seven feature tiles with real line icons, positioned around the student.
+        val pts=arrayOf(floatArrayOf(-151f,-96f),floatArrayOf(0f,-160f),floatArrayOf(151f,-96f),floatArrayOf(-171f,15f),floatArrayOf(171f,15f),floatArrayOf(-132f,125f),floatArrayOf(132f,125f))
+        val tints=intArrayOf(0xff8b45ff.toInt(),0xff3777ff.toInt(),0xffffa000.toInt(),0xff00a5e8.toInt(),0xff00b985.toInt(),0xffff5353.toInt(),0xffec4a9a.toInt())
+        for(i in pts.indices) tile(canvas,cx+pts[i][0]*scale,cy+pts[i][1]*scale,i,tints[i],scale)
     }
 }
