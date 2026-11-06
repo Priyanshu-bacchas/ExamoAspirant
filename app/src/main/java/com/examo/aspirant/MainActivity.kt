@@ -167,52 +167,72 @@ class MainActivity : Activity() {
 
     private fun installMobileNavigationFix(view: WebView?) {
         val script = """
-            (function() {
+            (function () {
               if (window.__examoAndroidNavInstalled) return;
               window.__examoAndroidNavInstalled = true;
+
               var style = document.createElement('style');
               style.id = 'examo-android-nav-style';
               style.textContent = '@media(max-width:600px){' +
-                '.sidebar{width:min(82vw,300px)!important;max-width:300px!important;min-height:100dvh!important;overflow:hidden!important;transform:translateX(-105%)!important;transition:transform .25s ease!important;z-index:10001!important;box-shadow:8px 0 28px rgba(15,23,42,.22)!important}' +
+                '.sidebar{position:fixed!important;left:0!important;top:0!important;bottom:0!important;width:min(82vw,300px)!important;max-width:300px!important;min-height:100dvh!important;height:100dvh!important;overflow-y:auto!important;overflow-x:hidden!important;transform:translateX(-105%)!important;transition:transform .25s ease!important;z-index:10002!important;visibility:visible!important;pointer-events:auto!important;-webkit-overflow-scrolling:touch!important}' +
                 '.sidebar.examo-mobile-open{transform:translateX(0)!important}' +
-                '.main-content{width:100%!important;margin-left:0!important}' +
-                '.mobile-menu{display:flex!important;align-items:center;justify-content:center;width:42px;height:42px;cursor:pointer;border-radius:10px}' +
-                '.mobile-menu:active{background:#eef2ff}' +
-                '.examo-mobile-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.48);z-index:10000;display:none}' +
-                '.examo-mobile-backdrop.open{display:block}' +
-                '.topbar{position:sticky;top:0;z-index:1000}.content-area{min-width:0}}';
-              document.head.appendChild(style);
-              var sidebar = document.querySelector('.sidebar');
-              var menu = document.querySelector('.mobile-menu');
-              if (!sidebar || !menu) return;
-              var backdrop = document.createElement('div');
-              backdrop.className = 'examo-mobile-backdrop';
-              document.body.appendChild(backdrop);
+                '.main-content{width:100%!important;margin-left:0!important;min-width:0!important}' +
+                '.mobile-menu{display:flex!important;align-items:center!important;justify-content:center!important;width:46px!important;height:46px!important;min-width:46px!important;cursor:pointer!important;touch-action:manipulation!important;position:relative!important;z-index:10003!important;border-radius:10px!important;pointer-events:auto!important}' +
+                '.mobile-menu:active{background:#eef2ff!important}' +
+                '.examo-mobile-backdrop{position:fixed!important;inset:0!important;background:rgba(15,23,42,.50)!important;z-index:10001!important;display:none!important;touch-action:manipulation!important}' +
+                '.examo-mobile-backdrop.open{display:block!important}' +
+                '.topbar{position:sticky!important;top:0!important;z-index:1000!important}.content-area{min-width:0!important}}';
+              (document.head || document.documentElement).appendChild(style);
+
+              function getSidebar() { return document.querySelector('.sidebar'); }
+              function getBackdrop() {
+                var el = document.querySelector('.examo-mobile-backdrop');
+                if (!el) {
+                  el = document.createElement('div');
+                  el.className = 'examo-mobile-backdrop';
+                  document.body.appendChild(el);
+                  el.addEventListener('click', closeMenu);
+                }
+                return el;
+              }
               function closeMenu() {
-                sidebar.classList.remove('examo-mobile-open');
-                backdrop.classList.remove('open');
+                var sidebar = getSidebar();
+                if (sidebar) sidebar.classList.remove('examo-mobile-open');
+                var backdrop = document.querySelector('.examo-mobile-backdrop');
+                if (backdrop) backdrop.classList.remove('open');
+                document.body.style.overflow = '';
               }
               function toggleMenu() {
+                var sidebar = getSidebar();
+                if (!sidebar) return;
+                var backdrop = getBackdrop();
                 var open = !sidebar.classList.contains('examo-mobile-open');
                 sidebar.classList.toggle('examo-mobile-open', open);
                 backdrop.classList.toggle('open', open);
+                document.body.style.overflow = open ? 'hidden' : '';
               }
-              menu.setAttribute('role','button');
-              menu.setAttribute('aria-label','Open navigation menu');
-              menu.setAttribute('tabindex','0');
-              menu.addEventListener('click', toggleMenu);
-              menu.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleMenu(); }
+
+              // Delegated handlers work even when React mounts or replaces the header later.
+              document.addEventListener('click', function (event) {
+                var menu = event.target && event.target.closest ? event.target.closest('.mobile-menu') : null;
+                if (menu) {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  toggleMenu();
+                  return;
+                }
+                var navItem = event.target && event.target.closest ? event.target.closest('.sidebar-item, .sidebar-subitem') : null;
+                if (navItem) closeMenu();
+              }, true);
+
+              document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape') closeMenu();
               });
-              backdrop.addEventListener('click', closeMenu);
-              sidebar.addEventListener('click', function(e) {
-                var item = e.target.closest('.sidebar-subitem, .sidebar-item');
-                if (item && !/Student/.test(item.innerText || '')) closeMenu();
-              });
-              window.addEventListener('resize', function() {
+              window.addEventListener('resize', function () {
                 if (window.innerWidth > 600) closeMenu();
               });
               window.__examoAndroidCloseMenu = closeMenu;
+              getBackdrop();
             })();
         """.trimIndent()
         view?.evaluateJavascript(script, null)
