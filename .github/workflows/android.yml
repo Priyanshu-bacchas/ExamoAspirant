@@ -22,6 +22,27 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Restore persistent Android debug signing key
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: examo-android-debug-signing-v1
+
+      - name: Create debug signing key if missing and print SHA-1
+        shell: bash
+        run: |
+          mkdir -p ~/.android
+          if [ ! -f ~/.android/debug.keystore ]; then
+            keytool -genkeypair -v \
+              -keystore ~/.android/debug.keystore \
+              -storepass android -keypass android \
+              -alias androiddebugkey \
+              -dname "CN=Android Debug,O=Android,C=US" \
+              -keyalg RSA -keysize 2048 -validity 10000
+          fi
+          keytool -list -v -keystore ~/.android/debug.keystore \
+            -storepass android -alias androiddebugkey | grep -E 'SHA1:|SHA-1:'
+
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
