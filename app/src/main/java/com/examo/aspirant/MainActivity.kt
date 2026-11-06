@@ -361,7 +361,13 @@ class MainActivity : Activity() {
                     val scheme = uri.scheme?.lowercase() ?: return false
                     if ((scheme == "http" || scheme == "https") && isPdfUrl(uri)) {
                         openPdf(uri, view?.settings?.userAgentString)
-                        closePopup()
+                        popupWebView?.let { popup ->
+                            popup.post {
+                                root.removeView(popup)
+                                popup.destroy()
+                                if (popupWebView === popup) popupWebView = null
+                            }
+                        }
                         return true
                     }
                     return if (scheme == "http" || scheme == "https" || scheme == "about" || scheme == "javascript") false else openExternal(uri)
