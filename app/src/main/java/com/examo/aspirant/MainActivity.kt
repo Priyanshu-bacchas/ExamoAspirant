@@ -28,6 +28,7 @@ import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
@@ -39,6 +40,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
+import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -108,6 +110,10 @@ class MainActivity : Activity() {
                 override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                     val uri = request?.url ?: return false
                     val scheme = uri.scheme?.lowercase() ?: return false
+                    if ((scheme == "http" || scheme == "https") && isPdfUrl(uri)) {
+                        openPdf(uri, view?.settings?.userAgentString)
+                        return true
+                    }
                     if (scheme == "http" || scheme == "https" || scheme == "about" || scheme == "javascript") return false
                     return openExternal(uri)
                 }
@@ -219,18 +225,26 @@ class MainActivity : Activity() {
         Toast.makeText(this, "Choose your Google account", Toast.LENGTH_SHORT).show()
         activityScope.launch {
             try {
+                val webClientId = getString(R.string.default_web_client_id)
                 val googleOption = GetGoogleIdOption.Builder()
                     .setFilterByAuthorizedAccounts(false)
-                    .setServerClientId(getString(R.string.default_web_client_id))
+                    .setServerClientId(webClientId)
                     .setAutoSelectEnabled(false)
                     .build()
 
-                val request = GetCredentialRequest.Builder()
-                    .addCredentialOption(googleOption)
-                    .build()
-
                 val credentialManager = CredentialManager.create(this@MainActivity)
-                val result = credentialManager.getCredential(this@MainActivity, request)
+                val result = try {
+                    credentialManager.getCredential(
+                        this@MainActivity,
+                        GetCredentialRequest.Builder().addCredentialOption(googleOption).build()
+                    )
+                } catch (_: androidx.credentials.exceptions.NoCredentialException) {
+                    val signInOption = GetSignInWithGoogleOption.Builder(webClientId).build()
+                    credentialManager.getCredential(
+                        this@MainActivity,
+                        GetCredentialRequest.Builder().addCredentialOption(signInOption).build()
+                    )
+                }
                 val credential = result.credential
 
                 if (credential !is CustomCredential ||
@@ -283,6 +297,7 @@ class MainActivity : Activity() {
                 }
                 Toast.makeText(this@MainActivity, "Google login successful", Toast.LENGTH_SHORT).show()
             } catch (error: Exception) {
+                android.util.Log.e("ExamoApp", "Native Google sign-in failed", error)
                 val message = when (error) {
                     is androidx.credentials.exceptions.NoCredentialException ->
                         "No Google account found on this device. Add a Google account in Android Settings."
@@ -344,6 +359,11 @@ class MainActivity : Activity() {
                 override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                     val uri = request?.url ?: return false
                     val scheme = uri.scheme?.lowercase() ?: return false
+                    if ((scheme == "http" || scheme == "https") && isPdfUrl(uri)) {
+                        openPdf(uri, view?.settings?.userAgentString)
+                        closePopup()
+                        return true
+                    }
                     return if (scheme == "http" || scheme == "https" || scheme == "about" || scheme == "javascript") false else openExternal(uri)
                 }
             }
@@ -366,16 +386,40 @@ class MainActivity : Activity() {
         return path.endsWith(".pdf") || path.contains(".pdf/")
     }
 
-    private fun openPdf(uri: Uri) {
-        try {
-            val intent = Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(uri, "application/pdf")
-                addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY)
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    private fun openPdf(uri: Uri, userAgent: String? = webView.settings.userAgentString) {
+        Toast.makeText(this, "Opening PDF...", Toast.LENGTH_SHORT).show()
+        activityScope.launch {
+            try {
+                val file = withContext(Dispatchers.IO) {
+                    val connection = (URL(uri.toString()).openConnection() as HttpURLConnection)
+                    connection.connectTimeout = 20000
+                    connection.readTimeout = 45000
+                    connection.instanceFollowRedirects = true
+                    connection.setRequestProperty("Accept", "application/pdf,*/*")
+                    userAgent?.let { connection.setRequestProperty("User-Agent", it) }
+                    CookieManager.getInstance().getCookie(uri.toString())?.let {
+                        connection.setRequestProperty("Cookie", it)
+                    }
+                    try {
+                        val status = connection.responseCode
+                        if (status !in 200..299) throw IllegalStateException("PDF request failed (HTTP $status).")
+                        val file = File(cacheDir, "pdf_" + System.currentTimeMillis() + ".pdf")
+                        connection.inputStream.use { input -> file.outputStream().use { output -> input.copyTo(output) } }
+                        if (file.length() < 5 || file.inputStream().use { input ->
+                            val header = ByteArray(5); input.read(header); String(header, Charsets.US_ASCII) != "%PDF-"
+                        }) {
+                            file.delete()
+                            throw IllegalStateException("The server did not return a valid PDF. Please sign in again and retry.")
+                        }
+                        file
+                    } finally {
+                        connection.disconnect()
+                    }
+                }
+                startActivity(PdfViewerActivity.createIntent(this@MainActivity, file.absolutePath, file.name))
+            } catch (error: Exception) {
+                Toast.makeText(this@MainActivity, error.message ?: "Could not open PDF.", Toast.LENGTH_LONG).show()
             }
-            startActivity(Intent.createChooser(intent, "Open PDF"))
-        } catch (_: Exception) {
-            openExternal(uri)
         }
     }
 

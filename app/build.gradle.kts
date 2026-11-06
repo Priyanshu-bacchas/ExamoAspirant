@@ -10,8 +10,8 @@ android {
         applicationId = "com.examo.aspirant"
         minSdk = 23
         targetSdk = 35
-        versionCode = 6
-        versionName = "1.5.0"
+        versionCode = 8
+        versionName = "1.6.1"
     }
     buildTypes { release { isMinifyEnabled = false } }
     compileOptions {
@@ -21,6 +21,7 @@ android {
     kotlinOptions { jvmTarget = "17" }
 }
 dependencies {
+    implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
     implementation("com.google.firebase:firebase-auth")
     implementation("androidx.credentials:credentials:1.3.0")
