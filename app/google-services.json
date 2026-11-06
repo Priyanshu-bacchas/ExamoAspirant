@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "1015884984663",
+    "project_id": "examo-7e409",
+    "storage_bucket": "examo-7e409.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1015884984663:android:569f08a4b42d734f1bce12",
+        "android_client_info": {
+          "package_name": "com.examo.aspirant"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1015884984663-88ho45df5v04v2heie79898doa34ibfh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD6j5vo7qrD-eGuaohO9wxs46v4qCWPg-8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1015884984663-88ho45df5v04v2heie79898doa34ibfh.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
