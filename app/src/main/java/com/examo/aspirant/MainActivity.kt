@@ -260,25 +260,71 @@ class MainActivity : Activity() {
             (function () {
               function addHandle() {
                 var shell = document.querySelector('.ex-shell');
-                if (!shell || shell.querySelector('.examo-native-swipe-border')) return;
+                if (!shell) return;
                 if (getComputedStyle(shell).position === 'static') shell.style.position = 'relative';
-                var bar = document.createElement('div');
-                bar.className = 'examo-native-swipe-border';
-                bar.setAttribute('role', 'button');
-                bar.setAttribute('aria-label', 'Swipe down to return to welcome screen');
-                bar.style.cssText = 'position:absolute;left:0;right:0;top:0;height:9px;background:#2455ad;border-radius:26px 26px 0 0;z-index:10020;touch-action:pan-y;cursor:ns-resize;box-shadow:0 1px 4px rgba(20,50,110,.18)';
-                var startY = 0, dragging = false;
+                var bar = shell.querySelector('.examo-native-swipe-border');
+                if (!bar) {
+                  bar = document.createElement('div');
+                  bar.className = 'examo-native-swipe-border';
+                  bar.setAttribute('role', 'button');
+                  bar.setAttribute('aria-label', 'Swipe down to return to welcome screen');
+                  bar.style.cssText = 'position:absolute;left:14px;right:14px;top:10px;height:5px;background:#2455ad;border-radius:999px;z-index:10020;touch-action:none;cursor:ns-resize;box-shadow:0 1px 3px rgba(20,50,110,.20)';
+                  shell.appendChild(bar);
+                }
+                var brand = shell.querySelector('.ex-mobile-brand');
+                if (brand) {
+                  brand.style.marginTop = '10px';
+                  brand.style.marginBottom = '12px';
+                }
+                var tabs = shell.querySelector('.ex-main-tabs');
+                if (tabs) tabs.style.marginTop = '-8px';
+                if (bar.dataset.dragBound === '1') return;
+                bar.dataset.dragBound = '1';
+                var startY = 0, dragging = false, lastY = 0;
                 bar.addEventListener('touchstart', function(e) {
                   if (!e.touches || !e.touches.length) return;
-                  startY = e.touches[0].clientY; dragging = true;
+                  startY = e.touches[0].clientY; lastY = startY; dragging = true;
+                  shell.style.transition = 'none';
                 }, {passive:true});
-                bar.addEventListener('touchend', function(e) {
-                  if (!dragging || !e.changedTouches || !e.changedTouches.length) return;
-                  var dy = e.changedTouches[0].clientY - startY;
+                bar.addEventListener('touchmove', function(e) {
+                  if (!dragging || !e.touches || !e.touches.length) return;
+                  lastY = e.touches[0].clientY;
+                  var dy = Math.max(0, Math.min(lastY - startY, window.innerHeight * .72));
+                  shell.style.transform = 'translate3d(0,' + dy + 'px,0)';
+                  if (e.cancelable) e.preventDefault();
+                }, {passive:false});
+                function finish() {
+                  if (!dragging) return;
                   dragging = false;
-                  if (dy > 45 && window.ExamoSwipeBridge) window.ExamoSwipeBridge.showWelcome();
-                }, {passive:true});
-                shell.appendChild(bar);
+                  var dy = Math.max(0, lastY - startY);
+                  shell.style.transition = 'transform 240ms cubic-bezier(.2,.8,.2,1)';
+                  if (dy > 70 && window.ExamoSwipeBridge) {
+                    shell.style.transform = 'translate3d(0,' + window.innerHeight + 'px,0)';
+                    setTimeout(function() {
+                      shell.style.transform = '';
+                      window.ExamoSwipeBridge.showWelcome();
+                    }, 190);
+                  } else {
+                    shell.style.transform = 'translate3d(0,0,0)';
+                    setTimeout(function(){ shell.style.transition = ''; }, 260);
+                  }
+                }
+                bar.addEventListener('touchend', finish, {passive:true});
+                bar.addEventListener('touchcancel', finish, {passive:true});
+                bar.addEventListener('pointerdown', function(e) {
+                  if (e.pointerType === 'touch') return;
+                  startY = lastY = e.clientY; dragging = true;
+                  shell.style.transition = 'none';
+                  bar.setPointerCapture(e.pointerId);
+                });
+                bar.addEventListener('pointermove', function(e) {
+                  if (!dragging || e.pointerType === 'touch') return;
+                  lastY = e.clientY;
+                  var dy = Math.max(0, Math.min(lastY - startY, window.innerHeight * .72));
+                  shell.style.transform = 'translate3d(0,' + dy + 'px,0)';
+                });
+                bar.addEventListener('pointerup', finish);
+                bar.addEventListener('pointercancel', finish);
               }
               addHandle();
               if (!window.__examoSwipeBorderObserver) {
