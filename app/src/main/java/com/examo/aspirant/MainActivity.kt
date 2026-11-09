@@ -37,6 +37,7 @@ import java.net.URL
 class MainActivity : Activity() {
     private lateinit var root: FrameLayout
     private lateinit var webView: WebView
+    private var splashSheet: ExamoSplashView? = null
     private var popupWebView: WebView? = null
     private val activityScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var fileChooserCallback: ValueCallback<Array<Uri>>? = null
@@ -68,6 +69,7 @@ class MainActivity : Activity() {
         webView = createWebView()
         root.addView(webView, FrameLayout.LayoutParams(-1, -1))
         val splash = ExamoSplashView(this)
+        splashSheet = splash
         root.addView(splash, FrameLayout.LayoutParams(-1, -1))
         setContentView(root)
 
@@ -160,6 +162,13 @@ class MainActivity : Activity() {
             CookieManager.getInstance().setAcceptCookie(true)
             CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
 
+            addJavascriptInterface(object {
+                @JavascriptInterface
+                fun showWelcome() {
+                    runOnUiThread { showWelcomeSplash() }
+                }
+            }, "ExamoSwipeBridge")
+
             webViewClient = object : WebViewClient() {
                 override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                     val uri = request?.url ?: return false
@@ -176,6 +185,7 @@ class MainActivity : Activity() {
                     super.onPageFinished(view, url)
                     installMobileNavigationFix(view)
                     hideGoogleSignInInApp(view)
+                    installLoginSwipeBorder(view)
                 }
             }
 
@@ -242,6 +252,51 @@ class MainActivity : Activity() {
                     return true
                 }
             }
+        }
+    }
+
+    private fun installLoginSwipeBorder(view: WebView?) {
+        val script = """
+            (function () {
+              function addHandle() {
+                var shell = document.querySelector('.ex-shell');
+                if (!shell || shell.querySelector('.examo-native-swipe-border')) return;
+                if (getComputedStyle(shell).position === 'static') shell.style.position = 'relative';
+                var bar = document.createElement('div');
+                bar.className = 'examo-native-swipe-border';
+                bar.setAttribute('role', 'button');
+                bar.setAttribute('aria-label', 'Swipe down to return to welcome screen');
+                bar.style.cssText = 'position:absolute;left:0;right:0;top:0;height:9px;background:#2455ad;border-radius:26px 26px 0 0;z-index:10020;touch-action:pan-y;cursor:ns-resize;box-shadow:0 1px 4px rgba(20,50,110,.18)';
+                var startY = 0, dragging = false;
+                bar.addEventListener('touchstart', function(e) {
+                  if (!e.touches || !e.touches.length) return;
+                  startY = e.touches[0].clientY; dragging = true;
+                }, {passive:true});
+                bar.addEventListener('touchend', function(e) {
+                  if (!dragging || !e.changedTouches || !e.changedTouches.length) return;
+                  var dy = e.changedTouches[0].clientY - startY;
+                  dragging = false;
+                  if (dy > 45 && window.ExamoSwipeBridge) window.ExamoSwipeBridge.showWelcome();
+                }, {passive:true});
+                shell.appendChild(bar);
+              }
+              addHandle();
+              if (!window.__examoSwipeBorderObserver) {
+                window.__examoSwipeBorderObserver = new MutationObserver(addHandle);
+                window.__examoSwipeBorderObserver.observe(document.documentElement, {childList:true,subtree:true});
+              }
+            })();
+        """.trimIndent()
+        view?.evaluateJavascript(script, null)
+    }
+
+    private fun showWelcomeSplash() {
+        val splash = splashSheet ?: return
+        splash.visibility = View.VISIBLE
+        splash.alpha = 1f
+        splash.translationY = -splash.height.toFloat()
+        splash.post {
+            splash.animate().translationY(0f).setDuration(260).start()
         }
     }
 
