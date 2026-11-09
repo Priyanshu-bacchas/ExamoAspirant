@@ -82,19 +82,34 @@ class MainActivity : Activity() {
         var splashTouchStartY = 0f
         var webTouchStartY = 0f
         var webTouchStartX = 0f
-        splash.setOnTouchListener { _, event ->
+        var draggingSplash = false
+        splash.swipeHandle.setOnTouchListener { _, event ->
             when (event.action) {
-                android.view.MotionEvent.ACTION_DOWN -> { splashTouchStartY = event.rawY; true }
-                android.view.MotionEvent.ACTION_MOVE -> true
-                android.view.MotionEvent.ACTION_UP -> {
-                    val distance = splashTouchStartY - event.rawY
-                    if (distance > dp(55)) {
-                        splash.animate().translationY(-splash.height.toFloat()).alpha(0f)
-                            .setDuration(230).withEndAction { splash.visibility = View.GONE }.start()
+                android.view.MotionEvent.ACTION_DOWN -> {
+                    splashTouchStartY = event.rawY
+                    draggingSplash = true
+                    true
+                }
+                android.view.MotionEvent.ACTION_MOVE -> {
+                    if (draggingSplash) {
+                        val dy = event.rawY - splashTouchStartY
+                        if (dy < 0f) splash.translationY = dy.coerceAtLeast(-splash.height.toFloat())
                     }
                     true
                 }
-                android.view.MotionEvent.ACTION_CANCEL -> true
+                android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
+                    if (draggingSplash) {
+                        val moved = splashTouchStartY - event.rawY
+                        draggingSplash = false
+                        if (moved > dp(70)) {
+                            splash.animate().translationY(-splash.height.toFloat()).alpha(0f)
+                                .setDuration(230).withEndAction { splash.visibility = View.GONE }.start()
+                        } else {
+                            splash.animate().translationY(0f).setDuration(180).start()
+                        }
+                    }
+                    true
+                }
                 else -> true
             }
         }
