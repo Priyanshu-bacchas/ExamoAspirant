@@ -15,6 +15,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 
 class ExamoSplashView(context: Context) : LinearLayout(context) {
+    val swipeHandle: View = View(context)
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
     private fun rounded(color: Int, radius: Int) = GradientDrawable().apply {
         setColor(color); cornerRadius = dp(radius).toFloat()
@@ -33,7 +34,7 @@ class ExamoSplashView(context: Context) : LinearLayout(context) {
         val compact = screenHeightDp < 820f
         val veryShort = screenHeightDp < 700f
         val horizontalPad = if (veryShort) 14 else if (compact) 18 else 22
-        setPadding(dp(horizontalPad), dp(if (veryShort) 10 else if (compact) 14 else 20), dp(horizontalPad), dp(if (veryShort) 6 else 10))
+        setPadding(dp(horizontalPad), dp(if (veryShort) 18 else if (compact) 22 else 28), dp(horizontalPad), dp(if (veryShort) 6 else 10))
         background = GradientDrawable(GradientDrawable.Orientation.TL_BR,
             intArrayOf(Color.rgb(244,248,255), Color.rgb(211,229,252))).apply { cornerRadius = dp(28).toFloat() }
 
@@ -54,7 +55,7 @@ class ExamoSplashView(context: Context) : LinearLayout(context) {
         val artParams = LayoutParams(-1, 0, 1f).apply {
             topMargin = dp(if (compact) 0 else 4)
             bottomMargin = dp(if (compact) 0 else 3)
-            weight = if (veryShort) 0.42f else if (compact) 0.52f else 0.60f
+            weight = if (veryShort) 0.34f else if (compact) 0.42f else 0.48f
         }
         addView(art, artParams)
 
@@ -80,11 +81,12 @@ class ExamoSplashView(context: Context) : LinearLayout(context) {
             gravity = Gravity.CENTER
             setPadding(0, dp(if (veryShort) 1 else 3), 0, 0)
         }
-        val handle = View(context).apply {
-            background = rounded(Color.rgb(70, 96, 151), 8)
-            alpha = 0.95f
+        swipeHandle.apply {
+            background = rounded(Color.rgb(39, 76, 145), 8)
+            alpha = 1f
+            elevation = dp(2).toFloat()
         }
-        swipeArea.addView(handle, LayoutParams(dp(54), dp(4)).apply {
+        swipeArea.addView(swipeHandle, LayoutParams(-1, dp(if (veryShort) 7 else 8)).apply {
             bottomMargin = dp(7)
         })
         val swipe = label("Swipe up to get started  ↑", if (compact) 12f else 13f, Color.rgb(31,64,132), true).apply {
@@ -95,8 +97,8 @@ class ExamoSplashView(context: Context) : LinearLayout(context) {
         swipeArea.addView(swipe, LayoutParams(-2, dp(if (veryShort) 30 else if (compact) 34 else 38)))
         addView(swipeArea, LayoutParams(-1, dp(if (veryShort) 38 else if (compact) 45 else 50)))
         post {
-            handle.animate().alpha(0.35f).setDuration(850).withEndAction {
-                handle.animate().alpha(0.85f).setDuration(850).start()
+            swipeHandle.animate().alpha(0.55f).setDuration(850).withEndAction {
+                swipeHandle.animate().alpha(1f).setDuration(850).start()
             }.start()
         }
     }
@@ -215,10 +217,10 @@ private class StudentOrbitView(context: Context) : View(context) {
         canvas.drawCircle(cx,cy,132f*scale,p); p.clearShadowLayer()
         // Body with a gentle navy-to-blue fade
         val body=Path().apply {
-            moveTo(cx-88*scale,cy+119*scale)
-            cubicTo(cx-84*scale,cy+65*scale,cx-50*scale,cy+47*scale,cx-22*scale,cy+49*scale)
+            moveTo(cx-96*scale,cy+119*scale)
+            cubicTo(cx-91*scale,cy+63*scale,cx-54*scale,cy+45*scale,cx-22*scale,cy+49*scale)
             lineTo(cx+22*scale,cy+49*scale)
-            cubicTo(cx+57*scale,cy+48*scale,cx+84*scale,cy+68*scale,cx+88*scale,cy+119*scale)
+            cubicTo(cx+60*scale,cy+45*scale,cx+91*scale,cy+65*scale,cx+96*scale,cy+119*scale)
             close()
         }
         p.shader=android.graphics.LinearGradient(cx,cy+48*scale,cx,cy+122*scale,
@@ -235,13 +237,13 @@ private class StudentOrbitView(context: Context) : View(context) {
         p.color=Color.rgb(245,190,153)
         canvas.drawRoundRect(cx-13*scale,cy+15*scale,cx+13*scale,cy+65*scale,8f*scale,8f*scale,p)
         canvas.drawCircle(cx-38*scale,cy-5*scale,8f*scale,p); canvas.drawCircle(cx+38*scale,cy-5*scale,8f*scale,p)
-        canvas.drawOval(cx-34*scale,cy-47*scale,cx+34*scale,cy+31*scale,p)
+        canvas.drawOval(cx-36*scale,cy-46*scale,cx+36*scale,cy+34*scale,p)
         p.color=Color.rgb(255,207,190)
         canvas.drawCircle(cx-22*scale,cy+8*scale,6f*scale,p); canvas.drawCircle(cx+22*scale,cy+8*scale,6f*scale,p)
         p.color=Color.rgb(35,54,87)
-        canvas.drawCircle(cx-13*scale,cy-12*scale,2.8f*scale,p); canvas.drawCircle(cx+13*scale,cy-12*scale,2.8f*scale,p)
+        canvas.drawCircle(cx-14*scale,cy-9*scale,3.1f*scale,p); canvas.drawCircle(cx+14*scale,cy-9*scale,3.1f*scale,p)
         p.style=Paint.Style.STROKE; p.strokeWidth=2.3f*scale; p.strokeCap=Paint.Cap.ROUND
-        canvas.drawArc(cx-13*scale,cy-1*scale,cx+13*scale,cy+16*scale,15f,150f,false,p); p.style=Paint.Style.FILL
+        canvas.drawArc(cx-14*scale,cy+1*scale,cx+14*scale,cy+19*scale,15f,150f,false,p); p.style=Paint.Style.FILL
         // Graduation cap with gold tassel
         p.color=Color.rgb(17,43,88)
         val cap=Path().apply { moveTo(cx-82*scale,cy-49*scale); lineTo(cx,cy-78*scale); lineTo(cx+82*scale,cy-49*scale); lineTo(cx,cy-18*scale); close() }
