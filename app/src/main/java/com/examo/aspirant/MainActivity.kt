@@ -85,7 +85,7 @@ class MainActivity : Activity() {
         var webTouchStartY = 0f
         var webTouchStartX = 0f
         var draggingSplash = false
-        splash.swipeHandle.setOnTouchListener { _, event ->
+        splash.setSwipeTouchListener { _, event ->
             when (event.action) {
                 android.view.MotionEvent.ACTION_DOWN -> {
                     splashTouchStartY = event.rawY
@@ -104,10 +104,16 @@ class MainActivity : Activity() {
                         val moved = splashTouchStartY - event.rawY
                         draggingSplash = false
                         if (moved > dp(70)) {
+                            splash.animate().cancel()
                             splash.animate().translationY(-splash.height.toFloat()).alpha(0f)
-                                .setDuration(230).withEndAction { splash.visibility = View.GONE }.start()
+                                .setDuration(260).withEndAction {
+                                    splash.visibility = View.GONE
+                                    splash.translationY = 0f
+                                    splash.alpha = 1f
+                                }.start()
                         } else {
-                            splash.animate().translationY(0f).setDuration(180).start()
+                            splash.animate().translationY(0f).alpha(1f)
+                                .setDuration(220).start()
                         }
                     }
                     true
