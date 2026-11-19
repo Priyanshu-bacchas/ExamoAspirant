@@ -34,7 +34,7 @@ class ExamoSplashView(context: Context) : LinearLayout(context) {
         val compact = screenHeightDp < 820f
         val veryShort = screenHeightDp < 700f
         val horizontalPad = if (veryShort) 14 else if (compact) 18 else 22
-        setPadding(dp(horizontalPad), dp(if (veryShort) 28 else if (compact) 32 else 38), dp(horizontalPad), dp(if (veryShort) 6 else 10))
+        setPadding(dp(horizontalPad), dp(if (veryShort) 28 else if (compact) 32 else 38), dp(horizontalPad), 0)
         background = GradientDrawable(GradientDrawable.Orientation.TL_BR,
             intArrayOf(Color.rgb(244,248,255), Color.rgb(211,229,252))).apply { cornerRadius = dp(28).toFloat() }
 
@@ -106,7 +106,13 @@ class ExamoSplashView(context: Context) : LinearLayout(context) {
             alpha = 0.95f
         }
         swipeArea.addView(swipe, LayoutParams(-2, dp(if (veryShort) 30 else if (compact) 34 else 38)))
-        addView(swipeArea, LayoutParams(-1, dp(if (veryShort) 38 else if (compact) 45 else 50)).apply { topMargin = dp(10) })
+        addView(swipeArea, LayoutParams(-1, dp(if (veryShort) 38 else if (compact) 45 else 50)).apply {
+            topMargin = dp(10)
+            bottomMargin = 0
+        })
+        // The root has a large unused lower band on tall handset screens.
+        // Shift the complete grip + hint together down into that lower band.
+        swipeArea.translationY = dp(if (veryShort) 34 else if (compact) 54 else 76).toFloat()
         post {
             grip.animate().alpha(0.55f).setDuration(850).withEndAction {
                 grip.animate().alpha(1f).setDuration(850).start()
