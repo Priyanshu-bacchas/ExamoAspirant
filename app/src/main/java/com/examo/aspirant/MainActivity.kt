@@ -39,7 +39,6 @@ class MainActivity : Activity() {
     private lateinit var webView: WebView
     private var splashSheet: ExamoSplashView? = null
     private var authSheetOpen = false
-    private var webPageReady = false
     private var popupWebView: WebView? = null
     private val activityScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var fileChooserCallback: ValueCallback<Array<Uri>>? = null
@@ -97,18 +96,13 @@ class MainActivity : Activity() {
         splash.setSwipeTouchListener { _, event ->
             when (event.action) {
                 android.view.MotionEvent.ACTION_DOWN -> {
-                    if (!webPageReady) {
-                        Toast.makeText(this, "Login page is still loading. Please try again.", Toast.LENGTH_SHORT).show()
-                        draggingAuthSheet = false
-                        true
-                    } else {
-                        webView.animate().cancel()
-                        webView.visibility = View.VISIBLE
-                        webView.translationY = root.height.toFloat()
-                        swipeStartY = event.rawY
-                        draggingAuthSheet = true
-                        true
-                    }
+                    webView.animate().cancel()
+                    webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
+                    webView.visibility = View.VISIBLE
+                    webView.translationY = root.height.toFloat()
+                    swipeStartY = event.rawY
+                    draggingAuthSheet = true
+                    true
                 }
                 android.view.MotionEvent.ACTION_MOVE -> {
                     if (draggingAuthSheet) {
@@ -131,6 +125,7 @@ class MainActivity : Activity() {
                                 .translationY(0f)
                                 .setDuration(300)
                                 .withLayer()
+                                .withEndAction { webView.setLayerType(View.LAYER_TYPE_NONE, null) }
                                 .start()
                         } else {
                             webView.animate().cancel()
@@ -140,6 +135,7 @@ class MainActivity : Activity() {
                                 .withEndAction {
                                     webView.visibility = View.INVISIBLE
                                     webView.translationY = root.height.toFloat()
+                                    webView.setLayerType(View.LAYER_TYPE_NONE, null)
                                     authSheetOpen = false
                                 }
                                 .start()
@@ -192,7 +188,6 @@ class MainActivity : Activity() {
 
                 override fun onPageFinished(view: WebView?, url: String?) {
                     super.onPageFinished(view, url)
-                    webPageReady = true
                     installMobileNavigationFix(view)
                     hideGoogleSignInInApp(view)
                     installLoginSwipeBorder(view)
@@ -557,7 +552,7 @@ class MainActivity : Activity() {
               var css = document.createElement('style');
               css.id = 'examo-android-nav-style';
               css.textContent = '@media(max-width:600px){' +
-                '.sidebar{position:fixed!important;left:0!important;top:0!important;bottom:0!important;width:min(82vw,300px)!important;max-width:300px!important;min-height:100dvh!important;height:100dvh!important;overflow-y:auto!important;overflow-x:hidden!important;transform:translate3d(-105%,0,0)!important;transition:transform .25s ease!important;z-index:10002!important;visibility:visible!important;pointer-events:auto!important;-webkit-overflow-scrolling:touch!important;display:flex!important}' +
+                '.sidebar{position:fixed!important;left:0!important;top:0!important;bottom:0!important;width:min(82vw,300px)!important;max-width:300px!important;min-height:100dvh!important;height:100dvh!important;overflow-y:auto!important;overflow-x:hidden!important;transform:translate3d(-105%,0,0)!important;transition:transform .25s ease!important;z-index:10002!important;visibility:visible!important;pointer-events:auto!important;-webkit-overflow-scrolling:touch!important;display:flex!important;touch-action:pan-y!important}' +
                 '.sidebar.examo-mobile-open{transform:translate3d(0,0,0)!important}' +
                 '.main-content{width:100%!important;margin-left:0!important;min-width:0!important}' +
                 '.mobile-menu{display:flex!important;align-items:center!important;justify-content:center!important;width:56px!important;height:56px!important;min-width:56px!important;min-height:56px!important;cursor:pointer!important;touch-action:manipulation!important;position:relative!important;z-index:10003!important;border-radius:10px!important;pointer-events:auto!important;user-select:none!important;-webkit-tap-highlight-color:transparent!important}' +
@@ -614,9 +609,6 @@ class MainActivity : Activity() {
                 menu.setAttribute('aria-expanded','false');
                 menu.setAttribute('tabindex','0');
                 menu.style.setProperty('pointer-events','auto','important');
-
-                // A normal tap/click is the only menu-opening gesture.
-                // No touchend or pointerup toggles, so taps cannot double-fire.
                 menu.onclick = function(e) {
                   e.preventDefault();
                   e.stopPropagation();
@@ -634,10 +626,52 @@ class MainActivity : Activity() {
                 };
               }
 
+              function bindSidebarSwipe() {
+                var side = getSidebar();
+                if (!side || side.dataset.examoSwipeCloseBound === '1') return;
+                side.dataset.examoSwipeCloseBound = '1';
+                var startX = 0, startY = 0, lastX = 0, lastY = 0;
+                var horizontal = false;
+                side.addEventListener('touchstart', function(e) {
+                  if (!e.touches || !e.touches.length || !side.classList.contains('examo-mobile-open')) return;
+                  startX = lastX = e.touches[0].clientX;
+                  startY = lastY = e.touches[0].clientY;
+                  horizontal = false;
+                }, {passive:true});
+                side.addEventListener('touchmove', function(e) {
+                  if (!e.touches || !e.touches.length || !side.classList.contains('examo-mobile-open')) return;
+                  lastX = e.touches[0].clientX;
+                  lastY = e.touches[0].clientY;
+                  var dx = lastX - startX, dy = lastY - startY;
+                  if (dx < -14 && Math.abs(dx) > Math.abs(dy) * 1.25) horizontal = true;
+                  if (horizontal && e.cancelable) e.preventDefault();
+                }, {passive:false});
+                side.addEventListener('touchend', function() {
+                  if (!side.classList.contains('examo-mobile-open')) return;
+                  var dx = lastX - startX, dy = lastY - startY;
+                  if (horizontal && dx < -64 && Math.abs(dx) > Math.abs(dy) * 1.25) {
+                    window.__examoIgnoreTapUntil = Date.now() + 500;
+                    closeMenu();
+                  }
+                  horizontal = false;
+                }, {passive:true});
+                side.addEventListener('touchcancel', function(){ horizontal = false; }, {passive:true});
+              }
+
               document.addEventListener('click', function(e) {
+                if (window.__examoIgnoreTapUntil && Date.now() < window.__examoIgnoreTapUntil) {
+                  e.preventDefault(); e.stopPropagation();
+                  if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+                  return;
+                }
                 var item = e.target && e.target.closest
                   ? e.target.closest('.sidebar-item,.sidebar-subitem') : null;
-                if (item) closeMenu();
+                if (!item) return;
+                // Student is a disclosure/dropdown row, not a navigation route.
+                // Its aria-expanded click must keep the sidebar open.
+                if (item.classList.contains('sidebar-item') &&
+                    (item.hasAttribute('aria-expanded') || item.querySelector('.sidebar-chevron'))) return;
+                closeMenu();
               }, true);
               document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') closeMenu();
@@ -646,9 +680,13 @@ class MainActivity : Activity() {
                 if (window.innerWidth > 600) closeMenu();
               });
               bindMenu();
-              if (!window.__examoAndroidMenuObserver) {
-                window.__examoAndroidMenuObserver = new MutationObserver(bindMenu);
-                window.__examoAndroidMenuObserver.observe(document.documentElement,{childList:true,subtree:true});
+              bindSidebarSwipe();
+              if (!window.__examoAndroidNavObserver) {
+                window.__examoAndroidNavObserver = new MutationObserver(function() {
+                  bindMenu();
+                  bindSidebarSwipe();
+                });
+                window.__examoAndroidNavObserver.observe(document.documentElement,{childList:true,subtree:true});
               }
             })();
         """.trimIndent()
