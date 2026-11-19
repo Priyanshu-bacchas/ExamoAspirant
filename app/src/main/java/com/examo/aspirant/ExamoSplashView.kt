@@ -7,7 +7,6 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
-import android.graphics.drawable.InsetDrawable
 import android.animation.ValueAnimator
 import android.view.animation.LinearInterpolator
 import android.view.Gravity
@@ -16,7 +15,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 
 class ExamoSplashView(context: Context) : LinearLayout(context) {
-    val swipeHandle: View = View(context)
+    val swipeHandle: LinearLayout = LinearLayout(context)
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
     private fun rounded(color: Int, radius: Int) = GradientDrawable().apply {
         setColor(color); cornerRadius = dp(radius).toFloat()
@@ -77,17 +76,18 @@ class ExamoSplashView(context: Context) : LinearLayout(context) {
         addView(chips, LayoutParams(-1, dp(if (veryShort) 32 else if (compact) 36 else 40)))
 
         // A visible grab-handle makes the swipe gesture obvious.
-        val swipeArea = LinearLayout(context).apply {
+        val swipeArea = swipeHandle.apply {
             orientation = VERTICAL
             gravity = Gravity.CENTER
+            isClickable = true
             setPadding(0, dp(if (veryShort) 1 else 3), 0, 0)
         }
-        swipeHandle.apply {
-            background = InsetDrawable(rounded(Color.rgb(34, 79, 164), 999), 0, dp(17), 0, dp(17))
+        val grip = View(context).apply {
+            background = rounded(Color.rgb(34, 79, 164), 999)
             alpha = 1f
             elevation = dp(2).toFloat()
         }
-        swipeArea.addView(swipeHandle, LayoutParams(-1, dp(42)).apply {
+        swipeArea.addView(grip, LayoutParams(-1, dp(8)).apply {
             bottomMargin = dp(7)
         })
         val swipe = label("Swipe up to get started  ↑", if (compact) 12f else 13f, Color.rgb(31,64,132), true).apply {
@@ -96,10 +96,10 @@ class ExamoSplashView(context: Context) : LinearLayout(context) {
             alpha = 0.95f
         }
         swipeArea.addView(swipe, LayoutParams(-2, dp(if (veryShort) 30 else if (compact) 34 else 38)))
-        addView(swipeArea, LayoutParams(-1, dp(if (veryShort) 48 else if (compact) 55 else 60)).apply { topMargin = dp(10) })
+        addView(swipeArea, LayoutParams(-1, dp(if (veryShort) 38 else if (compact) 45 else 50)).apply { topMargin = dp(10) })
         post {
-            swipeHandle.animate().alpha(0.55f).setDuration(850).withEndAction {
-                swipeHandle.animate().alpha(1f).setDuration(850).start()
+            grip.animate().alpha(0.55f).setDuration(850).withEndAction {
+                grip.animate().alpha(1f).setDuration(850).start()
             }.start()
         }
     }
