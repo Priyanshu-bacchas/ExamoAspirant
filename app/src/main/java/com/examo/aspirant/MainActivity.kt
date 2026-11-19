@@ -302,16 +302,17 @@ class MainActivity : Activity() {
                   if (!dragging) return;
                   dragging = false;
                   var dy = Math.max(0, lastY - startY);
-                  shell.style.transition = 'transform 240ms cubic-bezier(.2,.8,.2,1)';
+                  shell.style.willChange = 'transform';
+                  shell.style.transition = 'transform 320ms cubic-bezier(.22,.61,.36,1)';
                   if (dy > 70 && window.ExamoSwipeBridge) {
                     shell.style.transform = 'translate3d(0,' + window.innerHeight + 'px,0)';
                     setTimeout(function() {
                       shell.style.transform = '';
                       window.ExamoSwipeBridge.showWelcome();
-                    }, 190);
+                    }, 320);
                   } else {
                     shell.style.transform = 'translate3d(0,0,0)';
-                    setTimeout(function(){ shell.style.transition = ''; }, 260);
+                    setTimeout(function(){ shell.style.transition = ''; shell.style.willChange = ''; }, 340);
                   }
                 }
                 bar.addEventListener('touchend', finish, {passive:true});
