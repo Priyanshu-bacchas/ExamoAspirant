@@ -16,6 +16,15 @@ import android.widget.TextView
 
 class ExamoSplashView(context: Context) : LinearLayout(context) {
     val swipeHandle: LinearLayout = LinearLayout(context)
+    fun setSwipeTouchListener(listener: OnTouchListener) {
+        // Listen on the container and both visible children so dragging the
+        // blue grip OR the hint text starts the same swipe gesture.
+        swipeHandle.setOnTouchListener(listener)
+        for (index in 0 until swipeHandle.childCount) {
+            swipeHandle.getChildAt(index).setOnTouchListener(listener)
+        }
+    }
+
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
     private fun rounded(color: Int, radius: Int) = GradientDrawable().apply {
         setColor(color); cornerRadius = dp(radius).toFloat()
