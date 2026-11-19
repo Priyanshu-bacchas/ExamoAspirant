@@ -106,18 +106,20 @@ class ExamoSplashView(context: Context) : LinearLayout(context) {
 
 private class StudentOrbitView(context: Context) : View(context) {
     private val p = Paint(Paint.ANTI_ALIAS_FLAG)
-    private var orbitAngle = 0f
-    private var orbitAnimator: ValueAnimator? = null
+    private var motionPhase = 0f
+    private var motionAnimator: ValueAnimator? = null
+    private val tilePhase = floatArrayOf(0f, .6f, 1.2f, .3f, .9f, 1.5f, .2f)
+    private val tileDuration = floatArrayOf(5f, 6f, 5.5f, 6.5f, 5.2f, 6f, 5.8f)
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-        if (orbitAnimator == null) {
-            orbitAnimator = ValueAnimator.ofFloat(0f, 360f).apply {
-                duration = 12000L
+        if (motionAnimator == null) {
+            motionAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
+                duration = 6000L
                 repeatCount = ValueAnimator.INFINITE
                 interpolator = LinearInterpolator()
                 addUpdateListener {
-                    orbitAngle = it.animatedValue as Float
+                    motionPhase = it.animatedValue as Float
                     postInvalidateOnAnimation()
                 }
                 start()
@@ -126,8 +128,8 @@ private class StudentOrbitView(context: Context) : View(context) {
     }
 
     override fun onDetachedFromWindow() {
-        orbitAnimator?.cancel()
-        orbitAnimator = null
+        motionAnimator?.cancel()
+        motionAnimator = null
         super.onDetachedFromWindow()
     }
     private fun color(value: Long) = value.toInt()
@@ -255,17 +257,15 @@ private class StudentOrbitView(context: Context) : View(context) {
         // Seven feature tiles with real line icons, positioned around the student.
         val pts=arrayOf(floatArrayOf(-151f,-96f),floatArrayOf(0f,-160f),floatArrayOf(151f,-96f),floatArrayOf(-171f,15f),floatArrayOf(171f,15f),floatArrayOf(-132f,125f),floatArrayOf(132f,125f))
         val tints=intArrayOf(0xff8b45ff.toInt(),0xff3777ff.toInt(),0xffffa000.toInt(),0xff00a5e8.toInt(),0xff00b985.toInt(),0xffff5353.toInt(),0xffec4a9a.toInt())
-        // Rotate the complete seven-tile constellation around the student.
-        // Keep each tile upright while its CENTER travels a full 360-degree orbit.
-        val radians = Math.toRadians(orbitAngle.toDouble())
-        val cosA = kotlin.math.cos(radians).toFloat()
-        val sinA = kotlin.math.sin(radians).toFloat()
+        // Match the website: each icon gently floats up/down at its own
+        // fixed anchor, with its own phase and duration (no circular orbit).
         for (i in pts.indices) {
-            val ox = pts[i][0] * scale
-            val oy = pts[i][1] * scale
-            val orbitX = ox * cosA - oy * sinA
-            val orbitY = ox * sinA + oy * cosA
-            tile(canvas, cx + orbitX, cy + orbitY, i, tints[i], scale)
+            val period = tileDuration[i]
+            val phase = (motionPhase * 6f / period + tilePhase[i] / period) % 1f
+            val verticalFloat = kotlin.math.sin(phase * (Math.PI * 2.0)).toFloat() * 7.5f * scale
+            val x = cx + pts[i][0] * scale
+            val y = cy + pts[i][1] * scale + verticalFloat
+            tile(canvas, x, y, i, tints[i], scale)
         }
     }
 }
