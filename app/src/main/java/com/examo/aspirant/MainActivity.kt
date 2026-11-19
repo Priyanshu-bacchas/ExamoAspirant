@@ -559,8 +559,62 @@ class MainActivity : Activity() {
                 '.mobile-menu svg{pointer-events:none!important}' +
                 '.examo-mobile-backdrop{position:fixed!important;inset:0!important;background:rgba(15,23,42,.50)!important;z-index:10001!important;display:none!important;touch-action:manipulation!important}' +
                 '.examo-mobile-backdrop.open{display:block!important}' +
-                '.topbar{position:sticky!important;top:0!important;z-index:1000!important}.content-area{min-width:0!important}}';
+                '.topbar{position:sticky!important;top:0!important;z-index:1000!important}.content-area{min-width:0!important}' +
+                // Native-only mobile presentation: keep the website DOM/actions,
+                // but render each table row as a readable stacked card in this WebView.
+                '.table-container{width:100%!important;max-width:100%!important;overflow:visible!important}' +
+                'table.data-table{display:block!important;width:100%!important;min-width:0!important;border-collapse:separate!important;border-spacing:0!important;background:transparent!important}' +
+                'table.data-table thead{display:none!important}' +
+                'table.data-table tbody{display:block!important;width:100%!important}' +
+                'table.data-table tbody tr.examo-mobile-record{display:block!important;width:100%!important;margin:0 0 13px!important;padding:12px 14px!important;background:#fff!important;border:1px solid #e1e7f0!important;border-radius:14px!important;box-shadow:0 4px 14px rgba(20,38,70,.06)!important;overflow:hidden!important}' +
+                'table.data-table tbody td{display:grid!important;grid-template-columns:minmax(88px,36%) minmax(0,1fr)!important;align-items:start!important;gap:10px!important;width:100%!important;min-width:0!important;padding:8px 0!important;border:0!important;border-bottom:1px solid #eef1f5!important;background:transparent!important;color:#344054!important;font-size:13px!important;line-height:1.4!important;white-space:normal!important;overflow-wrap:anywhere!important;vertical-align:middle!important}' +
+                'table.data-table tbody td:before{content:attr(data-label);display:block!important;color:#8290a5!important;font-size:10px!important;font-weight:750!important;letter-spacing:.045em!important;text-transform:uppercase!important;line-height:1.4!important}' +
+                'table.data-table tbody td.examo-mobile-title{display:block!important;padding:0 0 11px!important;margin:0 0 5px!important;border-bottom:1px solid #e9edf4!important;color:#172033!important;font-size:16px!important;font-weight:750!important;line-height:1.35!important}' +
+                'table.data-table tbody td.examo-mobile-title:before{display:none!important;content:none!important}' +
+                'table.data-table tbody td.examo-mobile-actions{display:flex!important;align-items:center!important;justify-content:flex-start!important;flex-wrap:wrap!important;gap:8px!important;padding:12px 0 0!important;border-bottom:0!important}' +
+                'table.data-table tbody td.examo-mobile-actions:before{display:none!important;content:none!important}' +
+                'table.data-table tbody td.examo-mobile-actions .row-actions{display:flex!important;flex-wrap:wrap!important;gap:8px!important}' +
+                'table.data-table tbody td.examo-mobile-actions button,table.data-table tbody td.examo-mobile-actions a{max-width:100%!important}' +
+                'table.data-table tbody tr:last-child{margin-bottom:0!important}' +
+                '.data-card{min-width:0!important;max-width:100%!important;overflow:visible!important}' +
+                '.page,.content-area,.main-content{min-width:0!important;max-width:100%!important;overflow-x:hidden!important}' +
+                '.jobs-chip{display:inline-block!important;margin:5px 0 0!important;white-space:normal!important}' +
+                '}';
               (document.head || document.documentElement).appendChild(css);
+
+              function decorateDataTables() {
+                if (window.innerWidth > 600) return;
+                document.querySelectorAll('table.data-table').forEach(function(table) {
+                  var headers = Array.from(table.querySelectorAll('thead th')).map(function(th) {
+                    return (th.innerText || th.textContent || '').trim();
+                  });
+                  if (!headers.length) return;
+                  table.querySelectorAll('tbody tr').forEach(function(row) {
+                    row.classList.add('examo-mobile-record');
+                    var cells = Array.from(row.children).filter(function(el) {
+                      return el.tagName === 'TD';
+                    });
+                    var titleAssigned = false;
+                    cells.forEach(function(cell, index) {
+                      var label = headers[index] || '';
+                      cell.setAttribute('data-label', label);
+                      if (cell.classList.contains('select-column')) return;
+                      if (!titleAssigned && /^(exam name|name|subject|student|user|job|title)$/i.test(label)) {
+                        cell.classList.add('examo-mobile-title');
+                        titleAssigned = true;
+                      }
+                      if (/^(actions?|action)$/i.test(label) || cell.classList.contains('actions-column')) {
+                        cell.classList.add('examo-mobile-actions');
+                      }
+                    });
+                    if (!titleAssigned) {
+                      var first = cells.find(function(cell) { return !cell.classList.contains('select-column'); });
+                      if (first) first.classList.add('examo-mobile-title');
+                    }
+                  });
+                  table.classList.add('examo-mobile-card-table');
+                });
+              }
 
               function getSidebar() { return document.querySelector('.app-layout .sidebar') || document.querySelector('.sidebar'); }
               function getBackdrop() {
@@ -685,9 +739,11 @@ class MainActivity : Activity() {
                 window.__examoAndroidNavObserver = new MutationObserver(function() {
                   bindMenu();
                   bindSidebarSwipe();
+                  decorateDataTables();
                 });
                 window.__examoAndroidNavObserver.observe(document.documentElement,{childList:true,subtree:true});
               }
+              decorateDataTables();
             })();
         """.trimIndent()
         view?.evaluateJavascript(script, null)
