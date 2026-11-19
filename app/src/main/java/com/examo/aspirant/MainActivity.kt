@@ -268,7 +268,12 @@ class MainActivity : Activity() {
                   bar.className = 'examo-native-swipe-border';
                   bar.setAttribute('role', 'button');
                   bar.setAttribute('aria-label', 'Swipe down to return to welcome screen');
-                  bar.style.cssText = 'position:absolute;left:14px;right:14px;top:10px;height:5px;background:#2455ad;border-radius:999px;z-index:10020;touch-action:none;cursor:ns-resize;box-shadow:0 1px 3px rgba(20,50,110,.20)';
+                  // Large transparent touch target, with a slim inset blue grip.
+                  // This keeps the reference look but is much easier to grab.
+                  bar.style.cssText = 'position:absolute;left:0;right:0;top:0;height:46px;background:transparent;border-radius:26px 26px 0 0;z-index:10020;touch-action:none;cursor:ns-resize';
+                  var grip = document.createElement('div');
+                  grip.style.cssText = 'position:absolute;left:14px;right:14px;top:10px;height:6px;background:#2455ad;border-radius:999px;box-shadow:0 2px 4px rgba(20,50,110,.22);pointer-events:none';
+                  bar.appendChild(grip);
                   shell.appendChild(bar);
                 }
                 var brand = shell.querySelector('.ex-mobile-brand');
