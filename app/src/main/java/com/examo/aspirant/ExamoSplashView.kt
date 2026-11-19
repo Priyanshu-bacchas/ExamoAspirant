@@ -81,6 +81,10 @@ class ExamoSplashView(context: Context) : LinearLayout(context) {
         }
         addView(chips, LayoutParams(-1, dp(if (veryShort) 32 else if (compact) 36 else 40)))
 
+        // Consume the remaining vertical space here so the swipe grip and hint
+        // stay anchored close to the bottom edge on both compact and tall phones.
+        addView(View(context), LayoutParams(-1, 0, 1f))
+
         // A visible grab-handle makes the swipe gesture obvious.
         val swipeArea = swipeHandle.apply {
             orientation = VERTICAL
