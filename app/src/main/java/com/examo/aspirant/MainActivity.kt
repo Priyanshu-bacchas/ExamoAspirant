@@ -579,6 +579,24 @@ class MainActivity : Activity() {
                 '.data-card{min-width:0!important;max-width:100%!important;overflow:visible!important}' +
                 '.page,.content-area,.main-content{min-width:0!important;max-width:100%!important;overflow-x:hidden!important}' +
                 '.jobs-chip{display:inline-block!important;margin:5px 0 0!important;white-space:normal!important}' +
+                // Keep Latest Jobs / Admit Card / Results in one compact row.
+                '.jobs-tabs{display:flex!important;flex-wrap:nowrap!important;align-items:center!important;gap:6px!important;width:100%!important;max-width:100%!important;overflow-x:auto!important;overflow-y:hidden!important;white-space:nowrap!important;padding:2px 0 8px!important;scrollbar-width:none!important}' +
+                '.jobs-tabs::-webkit-scrollbar{display:none!important}' +
+                '.jobs-tab{display:inline-flex!important;flex:1 1 0!important;min-width:0!important;max-width:none!important;align-items:center!important;justify-content:center!important;gap:5px!important;padding:9px 7px!important;font-size:12px!important;line-height:1.1!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}' +
+                '.jobs-tab svg{width:15px!important;height:15px!important;min-width:15px!important;flex:0 0 15px!important}' +
+                // Jobs / Admit Card / Results: title, paired metadata, then actions.
+                'table.examo-mobile-job-table tbody tr.examo-mobile-record{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;column-gap:14px!important;row-gap:0!important;padding:14px 16px!important}' +
+                'table.examo-mobile-job-table tbody td{display:flex!important;flex-direction:column!important;align-items:flex-start!important;justify-content:center!important;min-width:0!important;gap:4px!important;padding:9px 0!important;border-bottom:0!important;font-size:13px!important;line-height:1.4!important}' +
+                'table.examo-mobile-job-table tbody td.examo-mobile-title{grid-column:1/-1!important;display:block!important;margin:0 0 5px!important;padding:0 0 12px!important;border-bottom:1px solid #e7ebf2!important;font-size:17px!important;font-weight:750!important;line-height:1.3!important;color:#172033!important}' +
+                'table.examo-mobile-job-table tbody td.examo-mobile-date{display:flex!important;flex-direction:column!important;align-items:flex-start!important;justify-content:flex-start!important;padding:8px 0 12px!important;border-bottom:1px solid #edf0f5!important}' +
+                'table.examo-mobile-job-table tbody td.examo-mobile-date:before{display:block!important;content:attr(data-label)!important;color:#8491a5!important;font-size:10px!important;font-weight:750!important;letter-spacing:.045em!important;text-transform:uppercase!important}' +
+                'table.examo-mobile-job-table tbody td.examo-mobile-status{display:flex!important;flex-direction:column!important;align-items:flex-start!important;justify-content:flex-start!important;padding:8px 0 12px!important;border-bottom:1px solid #edf0f5!important}' +
+                'table.examo-mobile-job-table tbody td.examo-mobile-status:before{display:block!important;content:attr(data-label)!important;color:#8491a5!important;font-size:10px!important;font-weight:750!important;letter-spacing:.045em!important;text-transform:uppercase!important}' +
+                'table.examo-mobile-job-table tbody td.examo-mobile-details{grid-column:1!important;display:flex!important;align-items:flex-start!important;justify-content:center!important;flex-direction:row!important;flex-wrap:wrap!important;padding:13px 0 0!important;border-bottom:0!important}' +
+                'table.examo-mobile-job-table tbody td.examo-mobile-actions{grid-column:2!important;display:flex!important;align-items:flex-end!important;justify-content:center!important;flex-direction:row!important;flex-wrap:wrap!important;padding:13px 0 0!important;border-bottom:0!important}' +
+                'table.examo-mobile-job-table tbody td.examo-mobile-details:before,table.examo-mobile-job-table tbody td.examo-mobile-actions:before{display:none!important;content:none!important}' +
+                'table.examo-mobile-job-table .jobs-video-btn,table.examo-mobile-job-table .jobs-add-btn,table.examo-mobile-job-table .jobs-open-btn{max-width:100%!important;justify-content:center!important;padding:7px 10px!important;font-size:11px!important;line-height:1.25!important;white-space:normal!important;text-align:center!important}' +
+                'table.examo-mobile-job-table .jobs-chip{font-size:10px!important;white-space:normal!important}' +
                 '}';
               (document.head || document.documentElement).appendChild(css);
 
@@ -589,6 +607,12 @@ class MainActivity : Activity() {
                     return (th.innerText || th.textContent || '').trim();
                   });
                   if (!headers.length) return;
+
+                  var normalized = headers.map(function(h) { return h.toLowerCase().replace(/\\s+/g, ' ').trim(); });
+                  var isJobRecordTable = normalized[0] === 'exam name' &&
+                    (normalized.indexOf('start date') >= 0 || normalized.indexOf('date') >= 0);
+                  if (isJobRecordTable) table.classList.add('examo-mobile-job-table');
+
                   table.querySelectorAll('tbody tr').forEach(function(row) {
                     row.classList.add('examo-mobile-record');
                     var cells = Array.from(row.children).filter(function(el) {
@@ -597,13 +621,19 @@ class MainActivity : Activity() {
                     var titleAssigned = false;
                     cells.forEach(function(cell, index) {
                       var label = headers[index] || '';
+                      var labelKey = normalized[index] || '';
                       cell.setAttribute('data-label', label);
                       if (cell.classList.contains('select-column')) return;
                       if (!titleAssigned && /^(exam name|name|subject|student|user|job|title)$/i.test(label)) {
                         cell.classList.add('examo-mobile-title');
                         titleAssigned = true;
                       }
-                      if (/^(actions?|action)$/i.test(label) || cell.classList.contains('actions-column')) {
+                      if (isJobRecordTable) {
+                        if (/^(start date|last date|date)$/i.test(labelKey)) cell.classList.add('examo-mobile-date');
+                        if (labelKey === 'status') cell.classList.add('examo-mobile-status');
+                        if (labelKey === 'details') cell.classList.add('examo-mobile-details');
+                      }
+                      if (/^(actions?|action)$/i.test(labelKey) || cell.classList.contains('actions-column')) {
                         cell.classList.add('examo-mobile-actions');
                       }
                     });
