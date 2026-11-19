@@ -566,6 +566,12 @@ class MainActivity : Activity() {
                 'html,body{background:#e8edf3!important}' +
                 '.app-layout,.main-content,.content-area,.page{background:linear-gradient(145deg,#edf0f4 0%,#e5eaf1 100%)!important}' +
                 '.topbar{background:linear-gradient(105deg,#19385f 0%,#10243e 100%)!important;color:#f8fafc!important;border-bottom:1px solid rgba(255,255,255,.12)!important}' +
+                '.topbar .breadcrumb,.topbar .breadcrumb span{color:#f8fafc!important;opacity:1!important}' +
+                '.topbar .breadcrumb strong{color:#ffffff!important;opacity:1!important;font-weight:750!important}' +
+                '.topbar .nt-bell{background:#ffffff!important;color:#173253!important;border:1px solid rgba(255,255,255,.85)!important;box-shadow:0 3px 8px rgba(7,20,40,.15)!important}' +
+                '.topbar .nt-bell svg{stroke:#173253!important;color:#173253!important;opacity:1!important}' +
+                '.topbar .nt-bell-badge{background:#dc2626!important;color:#ffffff!important;border:2px solid #173253!important}' +
+                '.topbar .mobile-menu svg{stroke:#ffffff!important}' +
                 '.topbar svg{stroke:#f8fafc!important}' +
                 '.table-container{width:100%!important;max-width:100%!important;overflow:visible!important;background:transparent!important}' +
                 'table.data-table{display:block!important;width:100%!important;min-width:0!important;border-collapse:separate!important;border-spacing:0!important;background:transparent!important}' +
@@ -605,6 +611,28 @@ class MainActivity : Activity() {
                 'table.examo-mobile-job-table tbody td.examo-mobile-details:before,table.examo-mobile-job-table tbody td.examo-mobile-actions:before{display:none!important;content:none!important}' +
                 'table.examo-mobile-job-table .jobs-video-btn,table.examo-mobile-job-table .jobs-add-btn,table.examo-mobile-job-table .jobs-open-btn{max-width:100%!important;justify-content:center!important;padding:7px 10px!important;font-size:11px!important;line-height:1.25!important;white-space:normal!important;text-align:center!important}' +
                 'table.examo-mobile-job-table .jobs-chip{font-size:10px!important;white-space:normal!important}' +
+                /* Latest Jobs: title; Start/Last Date; Watch and Added directly below the matching dates. */
+                'table.examo-mobile-latest-jobs-table tbody tr.examo-mobile-record{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;grid-template-rows:auto auto auto!important;column-gap:14px!important;row-gap:0!important;align-items:stretch!important;padding:15px 16px 14px!important}' +
+                'table.examo-mobile-latest-jobs-table tbody tr.examo-mobile-record>td{min-width:0!important;width:auto!important;padding:9px 0!important;border:0!important;background:transparent!important;color:#3e4959!important;font-size:13px!important;line-height:1.4!important}' +
+                'table.examo-mobile-latest-jobs-table tbody tr.examo-mobile-record>td.examo-mobile-title{grid-column:1/-1!important;grid-row:1!important;display:block!important;padding:0 0 12px!important;margin:0 0 7px!important;border-bottom:1px solid rgba(91,108,130,.24)!important;font-size:18px!important;line-height:1.3!important;color:#172033!important}' +
+                'table.examo-mobile-latest-jobs-table tbody tr.examo-mobile-record>td.examo-mobile-date:nth-child(2){grid-column:1!important;grid-row:2!important;display:flex!important;flex-direction:column!important;align-items:flex-start!important;gap:5px!important;padding:8px 0 13px!important;border-bottom:1px solid rgba(91,108,130,.18)!important}' +
+                'table.examo-mobile-latest-jobs-table tbody tr.examo-mobile-record>td.examo-mobile-date:nth-child(3){grid-column:2!important;grid-row:2!important;display:flex!important;flex-direction:column!important;align-items:flex-start!important;gap:5px!important;padding:8px 0 13px!important;border-bottom:1px solid rgba(91,108,130,.18)!important}' +
+                'table.examo-mobile-latest-jobs-table tbody tr.examo-mobile-record>td:nth-child(2):before,table.examo-mobile-latest-jobs-table tbody tr.examo-mobile-record>td:nth-child(3):before{display:block!important;content:attr(data-label)!important;color:#8491a5!important;font-size:10px!important;font-weight:750!important;letter-spacing:.045em!important;text-transform:uppercase!important}' +
+                'table.examo-mobile-latest-jobs-table tbody tr.examo-mobile-record>td.examo-mobile-details{grid-column:1!important;grid-row:3!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;padding:13px 0 0!important;border:0!important}' +
+                'table.examo-mobile-latest-jobs-table tbody tr.examo-mobile-record>td.examo-mobile-actions{grid-column:2!important;grid-row:3!important;display:flex!important;align-items:center!important;justify-content:flex-end!important;padding:13px 0 0!important;border:0!important}' +
+                'table.examo-mobile-latest-jobs-table tbody tr.examo-mobile-record>td.examo-mobile-details:before,table.examo-mobile-latest-jobs-table tbody tr.examo-mobile-record>td.examo-mobile-actions:before{display:none!important;content:none!important}' +
+                'table.examo-mobile-latest-jobs-table tbody tr.examo-mobile-record>td.examo-mobile-actions .jobs-add-btn{max-width:100%!important;white-space:nowrap!important}' +
+                /* Admit Cards / Results: date and status, then Watch and Open in the same columns below. */
+                'table.examo-mobile-job-posts-table tbody tr.examo-mobile-record{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;grid-template-rows:auto auto auto!important;column-gap:14px!important;row-gap:0!important;align-items:stretch!important;padding:15px 16px 14px!important}' +
+                'table.examo-mobile-job-posts-table tbody tr.examo-mobile-record>td{min-width:0!important;width:auto!important;padding:9px 0!important;border:0!important;background:transparent!important;color:#3e4959!important;font-size:13px!important;line-height:1.4!important}' +
+                'table.examo-mobile-job-posts-table tbody tr.examo-mobile-record>td.examo-mobile-title{grid-column:1/-1!important;grid-row:1!important;display:block!important;padding:0 0 12px!important;margin:0 0 7px!important;border-bottom:1px solid rgba(91,108,130,.24)!important;font-size:18px!important;line-height:1.3!important;color:#172033!important}' +
+                'table.examo-mobile-job-posts-table tbody tr.examo-mobile-record>td.examo-mobile-date{grid-column:1!important;grid-row:2!important;display:flex!important;flex-direction:column!important;align-items:flex-start!important;gap:5px!important;padding:8px 0 13px!important;border-bottom:1px solid rgba(91,108,130,.18)!important}' +
+                'table.examo-mobile-job-posts-table tbody tr.examo-mobile-record>td.examo-mobile-status{grid-column:2!important;grid-row:2!important;display:flex!important;flex-direction:column!important;align-items:flex-start!important;gap:5px!important;padding:8px 0 13px!important;border-bottom:1px solid rgba(91,108,130,.18)!important}' +
+                'table.examo-mobile-job-posts-table tbody tr.examo-mobile-record>td.examo-mobile-date:before,table.examo-mobile-job-posts-table tbody tr.examo-mobile-record>td.examo-mobile-status:before{display:block!important;content:attr(data-label)!important;color:#8491a5!important;font-size:10px!important;font-weight:750!important;letter-spacing:.045em!important;text-transform:uppercase!important}' +
+                'table.examo-mobile-job-posts-table tbody tr.examo-mobile-record>td.examo-mobile-details{grid-column:1!important;grid-row:3!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;padding:13px 0 0!important;border:0!important}' +
+                'table.examo-mobile-job-posts-table tbody tr.examo-mobile-record>td.examo-mobile-actions{grid-column:2!important;grid-row:3!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;padding:13px 0 0!important;border:0!important}' +
+                'table.examo-mobile-job-posts-table tbody tr.examo-mobile-record>td.examo-mobile-details:before,table.examo-mobile-job-posts-table tbody tr.examo-mobile-record>td.examo-mobile-actions:before{display:none!important;content:none!important}' +
+                'table.examo-mobile-job-posts-table .jobs-video-btn,table.examo-mobile-job-posts-table .jobs-open-btn{max-width:100%!important;white-space:nowrap!important}' +
                 // Exam Forms: card surface uses the reference grey-blue gradient;
                 // original table cells and button elements/colors remain intact.
                 '.examo-mobile-exam-form-wrapper{background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important;overflow:visible!important}' +
@@ -645,6 +673,16 @@ class MainActivity : Activity() {
                   var normalized = headers.map(function(h) { return h.toLowerCase().replace(/\\s+/g, ' ').trim(); });
                   var isJobRecordTable = normalized[0] === 'exam name' &&
                     (normalized.indexOf('start date') >= 0 || normalized.indexOf('date') >= 0);
+                  var isLatestJobsTable = normalized[0] === 'exam name' &&
+                    normalized.indexOf('start date') >= 0 &&
+                    normalized.indexOf('last date') >= 0 &&
+                    normalized.indexOf('details') >= 0;
+                  var isJobPostsTable = normalized[0] === 'exam name' &&
+                    normalized.indexOf('date') >= 0 &&
+                    normalized.indexOf('status') >= 0 &&
+                    normalized.indexOf('details') >= 0;
+                  if (isLatestJobsTable) table.classList.add('examo-mobile-latest-jobs-table');
+                  if (isJobPostsTable) table.classList.add('examo-mobile-job-posts-table');
                   var isExamFormsTable = normalized[0] === 'exam name' &&
                     normalized.indexOf('start date') >= 0 &&
                     normalized.indexOf('end date') >= 0 &&
