@@ -7,6 +7,7 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.InsetDrawable
 import android.animation.ValueAnimator
 import android.view.animation.LinearInterpolator
 import android.view.Gravity
@@ -34,7 +35,7 @@ class ExamoSplashView(context: Context) : LinearLayout(context) {
         val compact = screenHeightDp < 820f
         val veryShort = screenHeightDp < 700f
         val horizontalPad = if (veryShort) 14 else if (compact) 18 else 22
-        setPadding(dp(horizontalPad), dp(if (veryShort) 18 else if (compact) 22 else 28), dp(horizontalPad), dp(if (veryShort) 6 else 10))
+        setPadding(dp(horizontalPad), dp(if (veryShort) 28 else if (compact) 32 else 38), dp(horizontalPad), dp(if (veryShort) 6 else 10))
         background = GradientDrawable(GradientDrawable.Orientation.TL_BR,
             intArrayOf(Color.rgb(244,248,255), Color.rgb(211,229,252))).apply { cornerRadius = dp(28).toFloat() }
 
@@ -82,11 +83,11 @@ class ExamoSplashView(context: Context) : LinearLayout(context) {
             setPadding(0, dp(if (veryShort) 1 else 3), 0, 0)
         }
         swipeHandle.apply {
-            background = rounded(Color.rgb(39, 76, 145), 8)
+            background = InsetDrawable(rounded(Color.rgb(34, 79, 164), 999), 0, dp(17), 0, dp(17))
             alpha = 1f
             elevation = dp(2).toFloat()
         }
-        swipeArea.addView(swipeHandle, LayoutParams(-1, dp(if (veryShort) 7 else 8)).apply {
+        swipeArea.addView(swipeHandle, LayoutParams(-1, dp(42)).apply {
             bottomMargin = dp(7)
         })
         val swipe = label("Swipe up to get started  ↑", if (compact) 12f else 13f, Color.rgb(31,64,132), true).apply {
@@ -95,7 +96,7 @@ class ExamoSplashView(context: Context) : LinearLayout(context) {
             alpha = 0.95f
         }
         swipeArea.addView(swipe, LayoutParams(-2, dp(if (veryShort) 30 else if (compact) 34 else 38)))
-        addView(swipeArea, LayoutParams(-1, dp(if (veryShort) 38 else if (compact) 45 else 50)))
+        addView(swipeArea, LayoutParams(-1, dp(if (veryShort) 48 else if (compact) 55 else 60)).apply { topMargin = dp(10) })
         post {
             swipeHandle.animate().alpha(0.55f).setDuration(850).withEndAction {
                 swipeHandle.animate().alpha(1f).setDuration(850).start()
@@ -212,11 +213,19 @@ private class StudentOrbitView(context: Context) : View(context) {
         val dots=arrayOf(floatArrayOf(-112f,-143f),floatArrayOf(146f,-94f),floatArrayOf(-169f,40f),floatArrayOf(170f,50f),floatArrayOf(-8f,184f))
         dots.forEachIndexed { i,d ->
             p.color=if(i%2==0) Color.rgb(143,190,249) else Color.rgb(117,174,245)
-            canvas.drawCircle(cx+d[0]*scale,cy+d[1]*scale,(if(i==4)4f else 2.6f)*scale,p)
+            val dotPulse = (kotlin.math.sin((motionPhase * 2.0 * Math.PI + i * 0.9)).toFloat() + 1f) / 2f
+            p.alpha = (55 + 150 * dotPulse).toInt().coerceIn(0, 255)
+            val dotSize = (if(i==4)4f else 2.6f) * scale * (0.7f + 0.5f * dotPulse)
+            canvas.drawCircle(cx+d[0]*scale,cy+d[1]*scale,dotSize,p)
+            p.alpha = 255
         }
         // Central soft blue halo
         p.color=Color.rgb(222,235,255); p.setShadowLayer(18f*scale,0f,5f*scale,0x22365C9A)
         canvas.drawCircle(cx,cy,132f*scale,p); p.clearShadowLayer()
+        // Student gently bobs as on the web hero; rings and icon anchors stay fixed.
+        val studentBob = (kotlin.math.sin(motionPhase * 2.0 * Math.PI).toFloat() - 1f) * 3f * scale
+        canvas.save()
+        canvas.translate(0f, studentBob)
         // Body with a gentle navy-to-blue fade
         val body=Path().apply {
             moveTo(cx-96*scale,cy+119*scale)
@@ -243,7 +252,10 @@ private class StudentOrbitView(context: Context) : View(context) {
         p.color=Color.rgb(255,207,190)
         canvas.drawCircle(cx-22*scale,cy+8*scale,6f*scale,p); canvas.drawCircle(cx+22*scale,cy+8*scale,6f*scale,p)
         p.color=Color.rgb(35,54,87)
-        canvas.drawCircle(cx-14*scale,cy-9*scale,3.1f*scale,p); canvas.drawCircle(cx+14*scale,cy-9*scale,3.1f*scale,p)
+        val blinkPhase = (motionPhase * 6f / 5f) % 1f
+        val eyeHeight = if (blinkPhase in 0.92f..0.96f) 0.55f else 3.1f
+        canvas.drawOval(cx-17*scale,cy-9f*scale-eyeHeight*scale,cx-11*scale,cy-9f*scale+eyeHeight*scale,p)
+        canvas.drawOval(cx+11*scale,cy-9f*scale-eyeHeight*scale,cx+17*scale,cy-9f*scale+eyeHeight*scale,p)
         p.style=Paint.Style.STROKE; p.strokeWidth=2.3f*scale; p.strokeCap=Paint.Cap.ROUND
         canvas.drawArc(cx-14*scale,cy+1*scale,cx+14*scale,cy+19*scale,15f,150f,false,p); p.style=Paint.Style.FILL
         // Graduation cap with gold tassel
@@ -254,6 +266,7 @@ private class StudentOrbitView(context: Context) : View(context) {
         canvas.drawPath(capBand,p)
         line(canvas,cx+36*scale,cy-48*scale,cx+53*scale,cy-3*scale,Color.rgb(245,177,47),2.6f,scale)
         p.color=Color.rgb(245,177,47); canvas.drawCircle(cx+53*scale,cy-1*scale,5f*scale,p)
+        canvas.restore()
         // Seven feature tiles with real line icons, positioned around the student.
         val pts=arrayOf(floatArrayOf(-151f,-96f),floatArrayOf(0f,-160f),floatArrayOf(151f,-96f),floatArrayOf(-171f,15f),floatArrayOf(171f,15f),floatArrayOf(-132f,125f),floatArrayOf(132f,125f))
         val tints=intArrayOf(0xff8b45ff.toInt(),0xff3777ff.toInt(),0xffffa000.toInt(),0xff00a5e8.toInt(),0xff00b985.toInt(),0xffff5353.toInt(),0xffec4a9a.toInt())
@@ -262,10 +275,14 @@ private class StudentOrbitView(context: Context) : View(context) {
         for (i in pts.indices) {
             val period = tileDuration[i]
             val phase = (motionPhase * 6f / period + tilePhase[i] / period) % 1f
-            val verticalFloat = kotlin.math.sin(phase * (Math.PI * 2.0)).toFloat() * 7.5f * scale
+            val verticalFloat = (kotlin.math.sin(phase * (Math.PI * 2.0)).toFloat() - 1f) * 6.5f * scale
+            val tilt = kotlin.math.sin(phase * (Math.PI * 2.0)).toFloat() * 2f
             val x = cx + pts[i][0] * scale
             val y = cy + pts[i][1] * scale + verticalFloat
+            canvas.save()
+            canvas.rotate(tilt, x, y)
             tile(canvas, x, y, i, tints[i], scale)
+            canvas.restore()
         }
     }
 }
