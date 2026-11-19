@@ -553,59 +553,103 @@ class MainActivity : Activity() {
             (function () {
               if (window.__examoAndroidNavInstalled) return;
               window.__examoAndroidNavInstalled = true;
+
               var css = document.createElement('style');
               css.id = 'examo-android-nav-style';
               css.textContent = '@media(max-width:600px){' +
                 '.sidebar{position:fixed!important;left:0!important;top:0!important;bottom:0!important;width:min(82vw,300px)!important;max-width:300px!important;min-height:100dvh!important;height:100dvh!important;overflow-y:auto!important;overflow-x:hidden!important;transform:translate3d(-105%,0,0)!important;transition:transform .25s ease!important;z-index:10002!important;visibility:visible!important;pointer-events:auto!important;-webkit-overflow-scrolling:touch!important;display:flex!important}' +
                 '.sidebar.examo-mobile-open{transform:translate3d(0,0,0)!important}' +
                 '.main-content{width:100%!important;margin-left:0!important;min-width:0!important}' +
-                '.mobile-menu{display:flex!important;align-items:center!important;justify-content:center!important;width:48px!important;height:48px!important;min-width:48px!important;cursor:pointer!important;touch-action:manipulation!important;position:relative!important;z-index:10003!important;border-radius:10px!important;pointer-events:auto!important;user-select:none!important;-webkit-tap-highlight-color:transparent!important}' +
+                '.mobile-menu{display:flex!important;align-items:center!important;justify-content:center!important;width:56px!important;height:56px!important;min-width:56px!important;min-height:56px!important;cursor:pointer!important;touch-action:manipulation!important;position:relative!important;z-index:10003!important;border-radius:10px!important;pointer-events:auto!important;user-select:none!important;-webkit-tap-highlight-color:transparent!important}' +
                 '.mobile-menu svg{pointer-events:none!important}' +
                 '.examo-mobile-backdrop{position:fixed!important;inset:0!important;background:rgba(15,23,42,.50)!important;z-index:10001!important;display:none!important;touch-action:manipulation!important}' +
                 '.examo-mobile-backdrop.open{display:block!important}' +
                 '.topbar{position:sticky!important;top:0!important;z-index:1000!important}.content-area{min-width:0!important}}';
               (document.head || document.documentElement).appendChild(css);
-              function sidebar(){return document.querySelector('.sidebar');}
-              function backdrop(){
-                var el=document.querySelector('.examo-mobile-backdrop');
-                if(!el){el=document.createElement('div');el.className='examo-mobile-backdrop';document.body.appendChild(el);el.addEventListener('click',closeMenu);}
+
+              function getSidebar() { return document.querySelector('.app-layout .sidebar') || document.querySelector('.sidebar'); }
+              function getBackdrop() {
+                var el = document.querySelector('.examo-mobile-backdrop');
+                if (!el) {
+                  el = document.createElement('div');
+                  el.className = 'examo-mobile-backdrop';
+                  document.body.appendChild(el);
+                  el.addEventListener('click', closeMenu);
+                }
                 return el;
               }
-              function closeMenu(){
-                var s=sidebar();if(s)s.classList.remove('examo-mobile-open');
-                var b=document.querySelector('.examo-mobile-backdrop');if(b)b.classList.remove('open');
-                document.body.style.overflow='';
+              function openMenu() {
+                var side = getSidebar();
+                if (!side) return;
+                side.classList.add('examo-mobile-open');
+                side.style.setProperty('transform','translate3d(0,0,0)','important');
+                var back = getBackdrop();
+                back.classList.add('open');
+                back.style.setProperty('display','block','important');
+                document.body.style.overflow = 'hidden';
+                var menu = document.querySelector('.mobile-menu');
+                if (menu) menu.setAttribute('aria-expanded','true');
               }
-              function toggleMenu(){
-                var s=sidebar();if(!s)return;var b=backdrop();
-                var open=!s.classList.contains('examo-mobile-open');
-                s.classList.toggle('examo-mobile-open',open);b.classList.toggle('open',open);
-                document.body.style.overflow=open?'hidden':'';
+              function closeMenu() {
+                var side = getSidebar();
+                if (side) {
+                  side.classList.remove('examo-mobile-open');
+                  side.style.setProperty('transform','translate3d(-105%,0,0)','important');
+                }
+                var back = document.querySelector('.examo-mobile-backdrop');
+                if (back) {
+                  back.classList.remove('open');
+                  back.style.setProperty('display','none','important');
+                }
+                document.body.style.overflow = '';
+                var menu = document.querySelector('.mobile-menu');
+                if (menu) menu.setAttribute('aria-expanded','false');
               }
-              var lastToggle=0;
-              function handleMenuEvent(e){
-                var menu=e.target&&e.target.closest?e.target.closest('.mobile-menu'):null;if(!menu)return;
-                var now=Date.now();if(now-lastToggle<450)return;lastToggle=now;
-                e.preventDefault();e.stopPropagation();if(e.stopImmediatePropagation)e.stopImmediatePropagation();toggleMenu();
+              function bindMenu() {
+                var menu = document.querySelector('.mobile-menu');
+                if (!menu || menu.dataset.examoClickBound === '1') return;
+                menu.dataset.examoClickBound = '1';
+                menu.setAttribute('role','button');
+                menu.setAttribute('aria-label','Open navigation menu');
+                menu.setAttribute('aria-expanded','false');
+                menu.setAttribute('tabindex','0');
+                menu.style.setProperty('pointer-events','auto','important');
+
+                // A normal tap/click is the only menu-opening gesture.
+                // No touchend or pointerup toggles, so taps cannot double-fire.
+                menu.onclick = function(e) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  var side = getSidebar();
+                  if (side && side.classList.contains('examo-mobile-open')) closeMenu();
+                  else openMenu();
+                };
+                menu.onkeydown = function(e) {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    var side = getSidebar();
+                    if (side && side.classList.contains('examo-mobile-open')) closeMenu();
+                    else openMenu();
+                  }
+                };
               }
-              function bindMenu(){
-                var menu=document.querySelector('.mobile-menu');
-                if(!menu||menu.dataset.examoAndroidBound==='1')return;
-                menu.dataset.examoAndroidBound='1';
-                menu.addEventListener('click',handleMenuEvent,true);
-                menu.addEventListener('touchend',handleMenuEvent,{capture:true,passive:false});
-                menu.addEventListener('pointerup',handleMenuEvent,true);
-                menu.setAttribute('role','button');menu.setAttribute('aria-label','Open navigation menu');menu.setAttribute('tabindex','0');
+
+              document.addEventListener('click', function(e) {
+                var item = e.target && e.target.closest
+                  ? e.target.closest('.sidebar-item,.sidebar-subitem') : null;
+                if (item) closeMenu();
+              }, true);
+              document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') closeMenu();
+              });
+              window.addEventListener('resize', function() {
+                if (window.innerWidth > 600) closeMenu();
+              });
+              bindMenu();
+              if (!window.__examoAndroidMenuObserver) {
+                window.__examoAndroidMenuObserver = new MutationObserver(bindMenu);
+                window.__examoAndroidMenuObserver.observe(document.documentElement,{childList:true,subtree:true});
               }
-              document.addEventListener('click',handleMenuEvent,true);
-              document.addEventListener('touchend',handleMenuEvent,{capture:true,passive:false});
-              document.addEventListener('pointerup',handleMenuEvent,true);
-              document.addEventListener('click',function(e){
-                var item=e.target&&e.target.closest?e.target.closest('.sidebar-item,.sidebar-subitem'):null;if(item)closeMenu();
-              },true);
-              document.addEventListener('keydown',function(e){if(e.key==='Escape')closeMenu();});
-              window.addEventListener('resize',function(){if(window.innerWidth>600)closeMenu();});
-              bindMenu();new MutationObserver(bindMenu).observe(document.documentElement,{childList:true,subtree:true});
             })();
         """.trimIndent()
         view?.evaluateJavascript(script, null)
