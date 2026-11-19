@@ -597,6 +597,24 @@ class MainActivity : Activity() {
                 'table.examo-mobile-job-table tbody td.examo-mobile-details:before,table.examo-mobile-job-table tbody td.examo-mobile-actions:before{display:none!important;content:none!important}' +
                 'table.examo-mobile-job-table .jobs-video-btn,table.examo-mobile-job-table .jobs-add-btn,table.examo-mobile-job-table .jobs-open-btn{max-width:100%!important;justify-content:center!important;padding:7px 10px!important;font-size:11px!important;line-height:1.25!important;white-space:normal!important;text-align:center!important}' +
                 'table.examo-mobile-job-table .jobs-chip{font-size:10px!important;white-space:normal!important}' +
+                // Exam Forms mobile card: title, two dates, then one horizontal action row.
+                '.examo-mobile-exam-form-wrapper{background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important;overflow:visible!important}' +
+                'table.examo-mobile-exam-form-table tbody tr.examo-mobile-record{display:grid!important;grid-template-columns:minmax(0,1.05fr) minmax(0,1.25fr) minmax(0,.72fr) minmax(0,.92fr)!important;column-gap:8px!important;row-gap:0!important;width:100%!important;margin:0 0 14px!important;padding:15px 16px 13px!important;background:#fff!important;border:1px solid #dfe5ee!important;border-radius:17px!important;box-shadow:0 4px 12px rgba(20,38,70,.055)!important;overflow:hidden!important}' +
+                'table.examo-mobile-exam-form-table tbody td{display:flex!important;align-items:center!important;justify-content:flex-start!important;min-width:0!important;width:auto!important;gap:5px!important;padding:9px 0!important;border:0!important;background:transparent!important;color:#344054!important;font-size:13px!important;line-height:1.35!important;white-space:normal!important;overflow-wrap:anywhere!important}' +
+                'table.examo-mobile-exam-form-table tbody td.examo-mobile-title{grid-column:1/-1!important;display:block!important;margin:0 0 6px!important;padding:0 0 12px!important;border-bottom:1px solid #e4e9f0!important;color:#172033!important;font-size:18px!important;font-weight:750!important;line-height:1.32!important}' +
+                'table.examo-mobile-exam-form-table tbody td.examo-mobile-title:before{display:none!important;content:none!important}' +
+                'table.examo-mobile-exam-form-table tbody td.examo-mobile-date{grid-column:span 2!important;display:flex!important;flex-direction:row!important;align-items:baseline!important;justify-content:flex-start!important;gap:5px!important;padding:10px 0 13px!important;font-size:13px!important;white-space:nowrap!important}' +
+                'table.examo-mobile-exam-form-table tbody td.examo-mobile-date:before{display:inline!important;content:attr(data-label) ": "!important;color:#68778d!important;font-size:12px!important;font-weight:500!important;letter-spacing:0!important;text-transform:none!important;white-space:nowrap!important}' +
+                'table.examo-mobile-exam-form-table tbody td.examo-mobile-status{grid-column:1!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;padding:8px 0 3px!important}' +
+                'table.examo-mobile-exam-form-table tbody td.examo-mobile-status:before,table.examo-mobile-exam-form-table tbody td.examo-mobile-details:before,table.examo-mobile-exam-form-table tbody td.examo-mobile-link:before{display:none!important;content:none!important}' +
+                'table.examo-mobile-exam-form-table tbody td.examo-mobile-details{grid-column:2!important;display:flex!important;align-items:center!important;justify-content:center!important;padding:8px 0 3px!important}' +
+                'table.examo-mobile-exam-form-table tbody td.examo-mobile-link{grid-column:3!important;display:flex!important;align-items:center!important;justify-content:center!important;padding:8px 0 3px!important}' +
+                'table.examo-mobile-exam-form-table tbody td.examo-mobile-actions{grid-column:4!important;display:flex!important;align-items:center!important;justify-content:flex-end!important;padding:8px 0 3px!important}' +
+                'table.examo-mobile-exam-form-table tbody td.examo-mobile-details .jobs-video-btn,table.examo-mobile-exam-form-table tbody td.examo-mobile-details button,table.examo-mobile-exam-form-table tbody td.examo-mobile-details a{max-width:100%!important;min-height:36px!important;padding:6px 8px!important;font-size:12px!important;white-space:nowrap!important}' +
+                'table.examo-mobile-exam-form-table tbody td.examo-mobile-link a{font-size:13px!important;white-space:nowrap!important}' +
+                'table.examo-mobile-exam-form-table tbody td.examo-mobile-actions .row-actions{display:flex!important;align-items:center!important;justify-content:flex-end!important;flex-wrap:nowrap!important;gap:6px!important;width:100%!important}' +
+                'table.examo-mobile-exam-form-table tbody td.examo-mobile-actions button{width:34px!important;min-width:34px!important;height:34px!important;min-height:34px!important;padding:6px!important}' +
+                'table.examo-mobile-exam-form-table tbody td.examo-mobile-actions svg{width:16px!important;height:16px!important}' +
                 '}';
               (document.head || document.documentElement).appendChild(css);
 
@@ -611,7 +629,18 @@ class MainActivity : Activity() {
                   var normalized = headers.map(function(h) { return h.toLowerCase().replace(/\\s+/g, ' ').trim(); });
                   var isJobRecordTable = normalized[0] === 'exam name' &&
                     (normalized.indexOf('start date') >= 0 || normalized.indexOf('date') >= 0);
+                  var isExamFormsTable = normalized[0] === 'exam name' &&
+                    normalized.indexOf('start date') >= 0 &&
+                    normalized.indexOf('end date') >= 0 &&
+                    normalized.indexOf('status') >= 0 &&
+                    normalized.indexOf('details') >= 0 &&
+                    normalized.indexOf('link') >= 0;
                   if (isJobRecordTable) table.classList.add('examo-mobile-job-table');
+                  if (isExamFormsTable) {
+                    table.classList.add('examo-mobile-exam-form-table');
+                    var cardWrapper = table.closest('.data-card');
+                    if (cardWrapper) cardWrapper.classList.add('examo-mobile-exam-form-wrapper');
+                  }
 
                   table.querySelectorAll('tbody tr').forEach(function(row) {
                     row.classList.add('examo-mobile-record');
@@ -632,6 +661,12 @@ class MainActivity : Activity() {
                         if (/^(start date|last date|date)$/i.test(labelKey)) cell.classList.add('examo-mobile-date');
                         if (labelKey === 'status') cell.classList.add('examo-mobile-status');
                         if (labelKey === 'details') cell.classList.add('examo-mobile-details');
+                      }
+                      if (isExamFormsTable) {
+                        if (/^(start date|end date)$/i.test(labelKey)) cell.classList.add('examo-mobile-date');
+                        if (labelKey === 'status') cell.classList.add('examo-mobile-status');
+                        if (labelKey === 'details') cell.classList.add('examo-mobile-details');
+                        if (labelKey === 'link') cell.classList.add('examo-mobile-link');
                       }
                       if (/^(actions?|action)$/i.test(labelKey) || cell.classList.contains('actions-column')) {
                         cell.classList.add('examo-mobile-actions');
