@@ -38,6 +38,8 @@ class MainActivity : Activity() {
     private lateinit var root: FrameLayout
     private lateinit var webView: WebView
     private var splashSheet: ExamoSplashView? = null
+    private var authSheetOpen = false
+    private var webPageReady = false
     private var popupWebView: WebView? = null
     private val activityScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var fileChooserCallback: ValueCallback<Array<Uri>>? = null
@@ -66,14 +68,23 @@ class MainActivity : Activity() {
         window.decorView.systemUiVisibility = android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
 
         root = FrameLayout(this).apply { setBackgroundColor(Color.WHITE) }
-        webView = createWebView()
-        root.addView(webView, FrameLayout.LayoutParams(-1, -1))
+
+        // Keep the welcome screen as the permanent background layer.
         val splash = ExamoSplashView(this)
         splashSheet = splash
         root.addView(splash, FrameLayout.LayoutParams(-1, -1))
+
+        // The login/signup WebView is a separate sheet above the welcome screen.
+        // It stays laid out and loaded, but starts just below the visible screen.
+        webView = createWebView()
+        webView.visibility = View.INVISIBLE
+        root.addView(webView, FrameLayout.LayoutParams(-1, -1))
         setContentView(root)
 
-        // Load the web app behind the splash so it is ready as soon as the user swipes up.
+        root.post {
+            webView.translationY = root.height.toFloat()
+        }
+
         if (savedInstanceState == null) {
             webView.loadUrl(getString(R.string.examo_website_url))
         } else {
@@ -81,70 +92,62 @@ class MainActivity : Activity() {
             if (restored == null) webView.loadUrl(getString(R.string.examo_website_url))
         }
 
-        var splashTouchStartY = 0f
-        var webTouchStartY = 0f
-        var webTouchStartX = 0f
-        var draggingSplash = false
+        var swipeStartY = 0f
+        var draggingAuthSheet = false
         splash.setSwipeTouchListener { _, event ->
             when (event.action) {
                 android.view.MotionEvent.ACTION_DOWN -> {
-                    splashTouchStartY = event.rawY
-                    draggingSplash = true
-                    true
+                    if (!webPageReady) {
+                        Toast.makeText(this, "Login page is still loading. Please try again.", Toast.LENGTH_SHORT).show()
+                        draggingAuthSheet = false
+                        true
+                    } else {
+                        webView.animate().cancel()
+                        webView.visibility = View.VISIBLE
+                        webView.translationY = root.height.toFloat()
+                        swipeStartY = event.rawY
+                        draggingAuthSheet = true
+                        true
+                    }
                 }
                 android.view.MotionEvent.ACTION_MOVE -> {
-                    if (draggingSplash) {
-                        val dy = event.rawY - splashTouchStartY
-                        if (dy < 0f) splash.translationY = dy.coerceAtLeast(-splash.height.toFloat())
+                    if (draggingAuthSheet) {
+                        val delta = event.rawY - swipeStartY
+                        // Finger moving upward pulls the login/signup sheet over
+                        // the fixed welcome screen.
+                        webView.translationY = (root.height.toFloat() + delta)
+                            .coerceIn(0f, root.height.toFloat())
                     }
                     true
                 }
                 android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
-                    if (draggingSplash) {
-                        val moved = splashTouchStartY - event.rawY
-                        draggingSplash = false
-                        if (moved > dp(70)) {
-                            splash.animate().cancel()
-                            splash.animate().translationY(-splash.height.toFloat()).alpha(0f)
-                                .setDuration(260).withEndAction {
-                                    splash.visibility = View.GONE
-                                    splash.translationY = 0f
-                                    splash.alpha = 1f
-                                }.start()
+                    if (draggingAuthSheet) {
+                        val movedUp = swipeStartY - event.rawY
+                        draggingAuthSheet = false
+                        if (movedUp > dp(55)) {
+                            authSheetOpen = true
+                            webView.animate().cancel()
+                            webView.animate()
+                                .translationY(0f)
+                                .setDuration(300)
+                                .withLayer()
+                                .start()
                         } else {
-                            splash.animate().translationY(0f).alpha(1f)
-                                .setDuration(220).start()
+                            webView.animate().cancel()
+                            webView.animate()
+                                .translationY(root.height.toFloat())
+                                .setDuration(220)
+                                .withEndAction {
+                                    webView.visibility = View.INVISIBLE
+                                    webView.translationY = root.height.toFloat()
+                                    authSheetOpen = false
+                                }
+                                .start()
                         }
                     }
                     true
                 }
                 else -> true
-            }
-        }
-
-        // A downward swipe starting at the top edge of the web page brings the same
-        // splash sheet back; the splash background remains intact underneath.
-        webView.setOnTouchListener { _, event ->
-            when (event.action) {
-                android.view.MotionEvent.ACTION_DOWN -> {
-                    webTouchStartY = event.rawY
-                    webTouchStartX = event.rawX
-                    false
-                }
-                android.view.MotionEvent.ACTION_UP -> {
-                    val dy = event.rawY - webTouchStartY
-                    val dx = kotlin.math.abs(event.rawX - webTouchStartX)
-                    if (webView.scrollY <= 0 && webTouchStartY <= dp(72) && dy > dp(85) && dy > dx * 1.25f) {
-                        splash.visibility = View.VISIBLE
-                        splash.alpha = 1f
-                        splash.translationY = -splash.height.toFloat()
-                        splash.post {
-                            splash.animate().translationY(0f).setDuration(260).start()
-                        }
-                    }
-                    false
-                }
-                else -> false
             }
         }
     }
@@ -189,6 +192,7 @@ class MainActivity : Activity() {
 
                 override fun onPageFinished(view: WebView?, url: String?) {
                     super.onPageFinished(view, url)
+                    webPageReady = true
                     installMobileNavigationFix(view)
                     hideGoogleSignInInApp(view)
                     installLoginSwipeBorder(view)
@@ -349,13 +353,21 @@ class MainActivity : Activity() {
     }
 
     private fun showWelcomeSplash() {
-        val splash = splashSheet ?: return
-        splash.visibility = View.VISIBLE
-        splash.alpha = 1f
-        splash.translationY = -splash.height.toFloat()
-        splash.post {
-            splash.animate().translationY(0f).setDuration(260).start()
-        }
+        // Dismiss only the login/signup sheet; never remove or animate the
+        // welcome screen underneath it.
+        if (!::webView.isInitialized) return
+        webView.animate().cancel()
+        webView.visibility = View.VISIBLE
+        webView.animate()
+            .translationY(root.height.toFloat())
+            .setDuration(300)
+            .withLayer()
+            .withEndAction {
+                webView.visibility = View.INVISIBLE
+                webView.translationY = root.height.toFloat()
+                authSheetOpen = false
+            }
+            .start()
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -607,6 +619,7 @@ class MainActivity : Activity() {
     @Suppress("DEPRECATION")
     override fun onBackPressed() {
         if (customView != null) { hideCustomView(); return }
+        if (authSheetOpen) { showWelcomeSplash(); return }
         val popup = popupWebView
         if (popup != null) {
             root.removeView(popup)
