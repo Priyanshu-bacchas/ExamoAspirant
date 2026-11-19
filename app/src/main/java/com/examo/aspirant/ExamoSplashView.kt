@@ -51,11 +51,17 @@ class ExamoSplashView(context: Context) : LinearLayout(context) {
         header.addView(brand)
         addView(header, LayoutParams(-1, dp(if (veryShort) 44 else if (compact) 48 else 54)))
 
+        // Size the illustration from the available screen width, not the full
+        // leftover height. This brings the headline directly beneath the avatar
+        // instead of leaving a large empty gap on tall phones.
+        val screenWidthDp = resources.displayMetrics.widthPixels / resources.displayMetrics.density
+        val artHeightDp = minOf(screenWidthDp * 0.98f, screenHeightDp * 0.46f)
+            .toInt()
+            .coerceAtLeast(if (veryShort) 250 else 285)
         val art = StudentOrbitView(context)
-        val artParams = LayoutParams(-1, 0, 1f).apply {
+        val artParams = LayoutParams(-1, dp(artHeightDp)).apply {
             topMargin = dp(if (compact) 0 else 4)
-            bottomMargin = dp(if (compact) 0 else 3)
-            weight = if (veryShort) 0.34f else if (compact) 0.42f else 0.48f
+            bottomMargin = dp(0)
         }
         addView(art, artParams)
 
