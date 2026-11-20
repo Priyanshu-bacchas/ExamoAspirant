@@ -799,6 +799,49 @@ class MainActivity : Activity() {
                 '.examo-mobile-subscription-page .hs-side>.hs-panel:nth-of-type(2) .hs-link-btn{font-size:14px!important}' +
                 '@media(max-width:380px){.examo-mobile-subscription-page .hs-plan-body{grid-template-columns:minmax(0,1fr) minmax(112px,40%)!important;column-gap:9px!important;padding:12px!important}.examo-mobile-subscription-page .hs-plan-features{column-gap:11px!important;font-size:13px!important}.examo-mobile-subscription-page .hs-plan-card .hs-faq-card-head{padding:10px 12px!important}.examo-mobile-subscription-page .hs-plan-card .hs-faq-card-head h3{font-size:16px!important}}' +
                 '@media(max-width:330px){.examo-mobile-subscription-page .hs-plan-body{grid-template-columns:minmax(0,1fr)!important;grid-template-areas:"label" "features" "price" "sub" "button"!important}.examo-mobile-subscription-page .hs-plan-card .hs-btn{margin-top:12px!important}.examo-mobile-subscription-page .hs-plan-features{grid-template-columns:minmax(0,1fr)!important}}' +
+                /* Final dashboard polish: left-aligned welcome, stacked cap/books, compact first-screen fit. */
+                '.examo-mobile-dashboard-page .dashboard-heading{min-height:76px!important;margin:0 0 8px!important;padding:8px 11px!important;align-items:center!important}' +
+                '.examo-mobile-dashboard-page .dashboard-heading>div{flex:0 1 78%!important;width:78%!important;max-width:78%!important;min-width:0!important;margin:0 auto 0 0!important;padding:0!important;transform:none!important;text-align:left!important;align-self:center!important}' +
+                '.examo-mobile-dashboard-page .dashboard-heading .eyebrow{margin:0 0 4px!important;font-size:9px!important}' +
+                '.examo-mobile-dashboard-page .dashboard-heading h1{font-size:16px!important;line-height:1.15!important;letter-spacing:-.2px!important}' +
+                '.examo-mobile-dashboard-page .dashboard-heading p:not(.eyebrow){margin-top:3px!important;font-size:9.5px!important;line-height:1.18!important}' +
+                '.examo-mobile-dashboard-page .dashboard-heading:before{content:"🎓"!important;position:absolute!important;right:47px!important;top:7px!important;bottom:auto!important;z-index:0!important;font-size:23px!important;line-height:1!important;letter-spacing:0!important;filter:drop-shadow(0 2px 2px rgba(30,70,130,.12))}' +
+                '.examo-mobile-dashboard-page .dashboard-heading:after{content:"📚"!important;position:absolute!important;right:8px!important;bottom:7px!important;top:auto!important;z-index:0!important;font-size:27px!important;line-height:1!important;letter-spacing:0!important;filter:drop-shadow(0 2px 2px rgba(30,70,130,.12))}' +
+                '.examo-mobile-dashboard-page .stats-grid{margin-bottom:8px!important;padding:4px 2px!important;border-radius:13px!important}' +
+                '.examo-mobile-dashboard-page .stat-card{gap:2px!important;padding:3px 1px!important}' +
+                '.examo-mobile-dashboard-page .stat-icon{width:27px!important;height:27px!important;min-width:27px!important;margin-bottom:0!important}' +
+                '.examo-mobile-dashboard-page .stat-icon svg{width:16px!important;height:16px!important}' +
+                '.examo-mobile-dashboard-page .stat-card span{min-height:18px!important;font-size:8.5px!important}' +
+                '.examo-mobile-dashboard-page .stat-card strong{font-size:17px!important}' +
+                '.examo-mobile-dashboard-page .stat-card small{font-size:7.8px!important;margin-top:1px!important}' +
+                '.examo-mobile-dashboard-page .dashboard-grid{gap:7px!important}' +
+                '.examo-mobile-dashboard-page .dashboard-card{border-radius:12px!important}' +
+                '.examo-mobile-dashboard-page .card-heading{padding:7px 7px!important;gap:3px!important}' +
+                '.examo-mobile-dashboard-page .card-heading h2{font-size:11px!important}' +
+                '.examo-mobile-dashboard-page .card-heading p{font-size:8px!important;margin-top:2px!important}' +
+                '.examo-mobile-dashboard-page .text-button{font-size:8px!important}' +
+                '.examo-mobile-dashboard-page .text-button svg{width:10px!important;height:10px!important}' +
+                '.examo-mobile-dashboard-page .deadline-item{gap:4px!important;padding:6px 6px!important}' +
+                '.examo-mobile-dashboard-page .deadline-item strong{font-size:8px!important;line-height:1.15!important}' +
+                '.examo-mobile-dashboard-page .deadline-item>div>span{font-size:7.5px!important;margin-top:2px!important}' +
+                '.examo-mobile-dashboard-page .status-badge{font-size:7px!important;padding:3px 5px!important}' +
+                '.examo-mobile-dashboard-page .dashboard-empty{min-height:54px!important;padding:7px 5px!important;font-size:8.5px!important}' +
+                '.examo-mobile-dashboard-page .calendar{padding:5px 5px 6px!important}' +
+                '.examo-mobile-dashboard-page .calendar-weekdays span{padding:2px 0!important;font-size:7px!important}' +
+                '.examo-mobile-dashboard-page .calendar-day{min-height:17px!important;font-size:7.5px!important}' +
+                '.examo-mobile-dashboard-page .calendar-legend{margin-top:5px!important;padding:5px 6px!important;font-size:7.5px!important}' +
+                '.examo-mobile-dashboard-page .schedule-list{padding:4px 6px!important}' +
+                '.examo-mobile-dashboard-page .schedule-item{gap:5px!important;padding:6px 5px!important}' +
+                '.examo-mobile-dashboard-page .schedule-date{min-width:29px!important;padding:4px 2px!important;font-size:8.5px!important}' +
+                '.examo-mobile-dashboard-page .schedule-item strong{font-size:9px!important}' +
+                '.examo-mobile-dashboard-page .schedule-item span{font-size:7.5px!important;margin-top:2px!important}' +
+                '.examo-mobile-dashboard-page .quick-actions-card{margin-top:8px!important;padding:8px 8px!important;border-radius:13px!important}' +
+                '.examo-mobile-dashboard-page .quick-actions-card h2{font-size:11px!important}' +
+                '.examo-mobile-dashboard-page .quick-actions-card p{font-size:8px!important;margin-top:2px!important}' +
+                '.examo-mobile-dashboard-page .quick-actions{margin-top:6px!important;gap:5px!important}' +
+                '.examo-mobile-dashboard-page .quick-actions button{min-height:31px!important;padding:4px 3px!important;font-size:7.5px!important;gap:3px!important}' +
+                '.examo-mobile-dashboard-page .quick-actions button svg{width:12px!important;height:12px!important}' +
+                '@media(max-height:820px) and (max-width:600px){.examo-mobile-dashboard-page .dashboard-heading{min-height:70px!important}.examo-mobile-dashboard-page .stats-grid{margin-bottom:6px!important}.examo-mobile-dashboard-page .dashboard-grid{gap:6px!important}.examo-mobile-dashboard-page .dashboard-empty{min-height:44px!important}.examo-mobile-dashboard-page .calendar{padding-top:4px!important;padding-bottom:4px!important}.examo-mobile-dashboard-page .calendar-day{min-height:15px!important}.examo-mobile-dashboard-page .quick-actions-card{margin-top:6px!important;padding:7px!important}.examo-mobile-dashboard-page .quick-actions button{min-height:29px!important}}' +
 
                 /* Dashboard fallback: target the unique dashboard classes directly,
                    so the two-column layout does not depend on a JS scope class. */
@@ -882,7 +925,14 @@ class MainActivity : Activity() {
                 if (window.innerWidth <= 600) {
                   dashboardGrid.style.setProperty('display','grid','important');
                   dashboardGrid.style.setProperty('grid-template-columns','repeat(2,minmax(0,1fr))','important');
-                  dashboardGrid.style.setProperty('gap','10px','important');
+                  dashboardGrid.style.setProperty('gap','7px','important');
+                  var headingContent = dashboardHeading.querySelector('div');
+                  if (headingContent) {
+                    headingContent.style.setProperty('margin','0 auto 0 0','important');
+                    headingContent.style.setProperty('padding','0','important');
+                    headingContent.style.setProperty('transform','none','important');
+                    headingContent.style.setProperty('text-align','left','important');
+                  }
                   dashboardGrid.style.setProperty('width','100%','important');
                   dashboardGrid.style.setProperty('min-width','0','important');
                   Array.prototype.forEach.call(dashboardGrid.children,function(card) {
