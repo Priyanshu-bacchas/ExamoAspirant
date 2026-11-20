@@ -1148,6 +1148,16 @@ class MainActivity : Activity() {
                 '.examo-mobile-dashboard-page{padding-bottom:10px!important}' +
                 '.examo-mobile-dashboard-page .quick-actions-card{position:static!important;inset:auto!important;top:auto!important;right:auto!important;bottom:auto!important;left:auto!important;z-index:auto!important;transform:none!important;width:100%!important;max-width:100%!important;min-width:0!important;margin:9px 0 10px!important}' +
                 '@media(max-width:360px){.examo-mobile-dashboard-page{padding-bottom:8px!important}.examo-mobile-dashboard-page .quick-actions-card{position:static!important;inset:auto!important;margin:8px 0 9px!important;width:100%!important}}' +
+
+                /* Welcome title stays on one line; compact the vertical stack so Quick Actions fits. */
+                '.examo-mobile-dashboard-page .dashboard-heading{min-height:66px!important;height:auto!important;padding:6px 9px!important;margin-bottom:8px!important}' +
+                '.examo-mobile-dashboard-page .dashboard-heading>div{width:74%!important;max-width:74%!important;flex:0 1 74%!important;min-width:0!important;margin:0 auto 0 0!important;align-self:center!important}' +
+                '.examo-mobile-dashboard-page .dashboard-heading h1{font-size:14px!important;line-height:1.12!important;letter-spacing:-.28px!important;white-space:nowrap!important;overflow:visible!important;text-overflow:clip!important}' +
+                '.examo-mobile-dashboard-page .dashboard-heading p:not(.eyebrow){margin-top:2px!important;font-size:9px!important;line-height:1.14!important}' +
+                '.examo-mobile-dashboard-page .dashboard-heading:after{width:94px!important;height:70px!important;right:3px!important}' +
+                '.examo-mobile-dashboard-page .dashboard-grid{grid-template-rows:repeat(2,clamp(190px,24vh,210px))!important;grid-auto-rows:clamp(190px,24vh,210px)!important}' +
+                '.examo-mobile-dashboard-page .quick-actions-card{margin-top:9px!important;margin-bottom:9px!important}' +
+                '@media(max-width:360px){.examo-mobile-dashboard-page .dashboard-heading{min-height:62px!important;padding:5px 8px!important}.examo-mobile-dashboard-page .dashboard-heading>div{width:74%!important;max-width:74%!important;flex-basis:74%!important}.examo-mobile-dashboard-page .dashboard-heading h1{font-size:13.5px!important;letter-spacing:-.32px!important;white-space:nowrap!important}.examo-mobile-dashboard-page .dashboard-heading p:not(.eyebrow){font-size:8.5px!important;line-height:1.12!important}.examo-mobile-dashboard-page .dashboard-heading:after{width:88px!important;height:66px!important;right:2px!important}.examo-mobile-dashboard-page .dashboard-grid{grid-template-rows:repeat(2,clamp(184px,23vh,198px))!important;grid-auto-rows:clamp(184px,23vh,198px)!important}}' +
                 '}';
               (document.head || document.documentElement).appendChild(css);
 
