@@ -799,6 +799,17 @@ class MainActivity : Activity() {
                 '.examo-mobile-subscription-page .hs-side>.hs-panel:nth-of-type(2) .hs-link-btn{font-size:14px!important}' +
                 '@media(max-width:380px){.examo-mobile-subscription-page .hs-plan-body{grid-template-columns:minmax(0,1fr) minmax(112px,40%)!important;column-gap:9px!important;padding:12px!important}.examo-mobile-subscription-page .hs-plan-features{column-gap:11px!important;font-size:13px!important}.examo-mobile-subscription-page .hs-plan-card .hs-faq-card-head{padding:10px 12px!important}.examo-mobile-subscription-page .hs-plan-card .hs-faq-card-head h3{font-size:16px!important}}' +
                 '@media(max-width:330px){.examo-mobile-subscription-page .hs-plan-body{grid-template-columns:minmax(0,1fr)!important;grid-template-areas:"label" "features" "price" "sub" "button"!important}.examo-mobile-subscription-page .hs-plan-card .hs-btn{margin-top:12px!important}.examo-mobile-subscription-page .hs-plan-features{grid-template-columns:minmax(0,1fr)!important}}' +
+
+                /* Dashboard fallback: target the unique dashboard classes directly,
+                   so the two-column layout does not depend on a JS scope class. */
+                '.dashboard-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important;width:100%!important;min-width:0!important;align-items:stretch!important}' +
+                '.dashboard-grid>.dashboard-card{grid-column:auto!important;grid-row:auto!important;min-width:0!important;width:auto!important;max-width:100%!important;overflow:hidden!important}' +
+                '.dashboard-grid>.dashboard-card:nth-child(3),.dashboard-grid>.dashboard-card:nth-child(4){grid-column:auto!important}' +
+                '.quick-actions-card{display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;margin-top:11px!important}' +
+                '.quick-actions{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;width:100%!important;gap:6px!important}' +
+                '.quick-actions button{min-width:0!important;justify-content:center!important;white-space:nowrap!important}' +
+                '@media(max-width:360px){.dashboard-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}.dashboard-grid>.dashboard-card{min-width:0!important}.dashboard-grid .card-heading{padding:8px 7px!important}.dashboard-grid .card-heading h2{font-size:11px!important}.dashboard-grid .card-heading p{font-size:8px!important}.dashboard-grid .text-button{font-size:8px!important}.dashboard-grid .deadline-item{gap:4px!important;padding:7px 6px!important}.dashboard-grid .deadline-item strong{font-size:8px!important}.dashboard-grid .deadline-item>div>span{font-size:7.5px!important}.dashboard-grid .status-badge{font-size:7px!important;padding:3px 5px!important}.dashboard-grid .calendar{padding:7px 5px!important}.dashboard-grid .calendar-day{min-height:19px!important;font-size:7.5px!important}.quick-actions button{font-size:8px!important}}' +
+
                 /* Dashboard: compact Examo study-overview layout, native WebView only. */
                 '.examo-mobile-dashboard-page{width:100%!important;max-width:100%!important;min-width:0!important;padding:0!important;color:#15284a!important;font-family:"Roboto Condensed","Arial Narrow",sans-serif!important}' +
                 '.examo-mobile-dashboard-page .dashboard-heading{position:relative!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;min-height:91px!important;margin:0 0 10px!important;padding:11px 14px!important;overflow:hidden!important;background:linear-gradient(112deg,#edf5ff 0%,#e4efff 62%,#cfe3ff 100%)!important;border:1px solid #c4dbfb!important;border-radius:15px!important;box-shadow:0 4px 10px rgba(34,82,145,.09)!important}' +
@@ -861,11 +872,32 @@ class MainActivity : Activity() {
               (document.head || document.documentElement).appendChild(css);
 
               function decorateDashboard() {
-                if (window.innerWidth > 600) return;
-                var dashboardHeading = document.querySelector('.page .dashboard-heading');
-                if (!dashboardHeading) return;
-                var dashboardPage = dashboardHeading.closest('.page');
+                var dashboardHeading = document.querySelector('.dashboard-heading');
+                var dashboardGrid = document.querySelector('.dashboard-grid');
+                if (!dashboardHeading || !dashboardGrid) return;
+                var dashboardPage = dashboardHeading.closest('.page') || dashboardGrid.parentElement;
                 if (dashboardPage) dashboardPage.classList.add('examo-mobile-dashboard-page');
+                // Set the mobile layout inline as a fallback for WebViews whose
+                // responsive viewport/class scoping differs between devices.
+                if (window.innerWidth <= 600) {
+                  dashboardGrid.style.setProperty('display','grid','important');
+                  dashboardGrid.style.setProperty('grid-template-columns','repeat(2,minmax(0,1fr))','important');
+                  dashboardGrid.style.setProperty('gap','10px','important');
+                  dashboardGrid.style.setProperty('width','100%','important');
+                  dashboardGrid.style.setProperty('min-width','0','important');
+                  Array.prototype.forEach.call(dashboardGrid.children,function(card) {
+                    card.style.setProperty('grid-column','auto','important');
+                    card.style.setProperty('min-width','0','important');
+                    card.style.setProperty('width','auto','important');
+                  });
+                  var quick = document.querySelector('.quick-actions');
+                  if (quick) {
+                    quick.style.setProperty('display','grid','important');
+                    quick.style.setProperty('grid-template-columns','repeat(3,minmax(0,1fr))','important');
+                    quick.style.setProperty('width','100%','important');
+                    quick.style.setProperty('gap','6px','important');
+                  }
+                }
               }
 
               function decorateDataTables() {
