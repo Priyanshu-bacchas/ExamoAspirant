@@ -550,6 +550,60 @@ class MainActivity : Activity() {
               window.__examoAndroidNavInstalled = true;
 
               var css = document.createElement('style');
+              var dashboardCapBooksSvg = `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 130">
+                  <defs>
+                    <linearGradient id="capTop" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0" stop-color="#244f91"/><stop offset=".55" stop-color="#102f66"/><stop offset="1" stop-color="#071d43"/>
+                    </linearGradient>
+                    <linearGradient id="redBook" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0" stop-color="#ff7770"/><stop offset="1" stop-color="#d93243"/>
+                    </linearGradient>
+                    <linearGradient id="goldBook" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0" stop-color="#ffe16c"/><stop offset="1" stop-color="#f49a16"/>
+                    </linearGradient>
+                    <linearGradient id="blueBook" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0" stop-color="#3d9cff"/><stop offset="1" stop-color="#0755c9"/>
+                    </linearGradient>
+                    <linearGradient id="pages" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e8f0fc"/>
+                    </linearGradient>
+                    <filter id="shadow" x="-20%" y="-20%" width="140%" height="160%">
+                      <feGaussianBlur stdDeviation="3"/>
+                    </filter>
+                  </defs>
+                  <ellipse cx="91" cy="119" rx="68" ry="6" fill="#446a9d" opacity=".18" filter="url(#shadow)"/>
+                  <g stroke-linejoin="round">
+                    <!-- bottom blue volume -->
+                    <path d="M19 99 Q19 94 26 93 L145 87 Q153 87 158 93 L161 104 Q162 109 155 111 L39 121 Q30 122 25 116 Z" fill="url(#blueBook)"/>
+                    <path d="M25 103 L145 97 Q151 97 156 101 L155 108 L39 118 Q31 119 27 114 Z" fill="url(#pages)"/>
+                    <path d="M28 114 Q33 121 42 120 L157 110" fill="none" stroke="#0647aa" stroke-width="2"/>
+                    <path d="M38 105 L145 100" stroke="#d7e7ff" stroke-width="1.2" opacity=".9"/>
+                    <!-- middle golden volume -->
+                    <path d="M24 77 Q23 72 31 71 L145 65 Q153 65 158 71 L161 81 Q162 86 155 88 L42 98 Q32 99 28 93 Z" fill="url(#goldBook)"/>
+                    <path d="M30 81 L145 75 Q152 75 157 79 L155 85 L42 95 Q34 96 30 91 Z" fill="url(#pages)"/>
+                    <path d="M30 91 Q35 98 44 97 L156 87" fill="none" stroke="#e68a0b" stroke-width="2"/>
+                    <path d="M43 82 L145 77" stroke="#fff5ce" stroke-width="1.2" opacity=".9"/>
+                    <!-- top red volume -->
+                    <path d="M31 55 Q30 50 38 49 L145 44 Q152 44 157 50 L160 60 Q160 65 153 67 L47 76 Q38 77 34 71 Z" fill="url(#redBook)"/>
+                    <path d="M36 59 L145 54 Q152 54 156 58 L154 64 L47 73 Q40 74 36 69 Z" fill="url(#pages)"/>
+                    <path d="M36 69 Q41 76 49 75 L155 66" fill="none" stroke="#cf2638" stroke-width="2"/>
+                    <path d="M49 60 L145 56" stroke="#fff0ee" stroke-width="1.2" opacity=".9"/>
+                    <!-- graduation cap base -->
+                    <path d="M48 32 L90 43 L132 31 L129 43 Q91 65 52 43 Z" fill="#102e62"/>
+                    <path d="M48 32 L90 43 L132 31" fill="none" stroke="#315a91" stroke-width="1.4"/>
+                    <!-- cap mortarboard -->
+                    <path d="M17 27 L87 5 L163 27 L89 52 Z" fill="url(#capTop)" stroke="#315b96" stroke-width="1.5"/>
+                    <path d="M27 27 L87 9 L153 27 L89 48 Z" fill="#1a3d79" opacity=".7"/>
+                    <path d="M137 22 L148 57" stroke="#f7bd32" stroke-width="3" stroke-linecap="round" fill="none"/>
+                    <circle cx="137" cy="22" r="3" fill="#ffd45b"/>
+                    <path d="M148 56 Q151 61 149 66 L146 72 Q143 75 140 72 L138 65 Q137 60 141 56 Z" fill="#f7b92f"/>
+                    <path d="M142 58 L144 70 M146 58 L145 70" stroke="#ffe08a" stroke-width="1.2" stroke-linecap="round"/>
+                    <!-- glints -->
+                    <path d="M22 14 L26 8 M13 19 L7 16 M35 10 L37 5" stroke="#2b83ff" stroke-width="2.3" stroke-linecap="round"/>
+                  </g>
+                </svg>`;
+              var dashboardCapBooksUrl = 'url("data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(dashboardCapBooksSvg) + '")';
               css.id = 'examo-android-nav-style';
               css.textContent = '@media(max-width:600px){' +
                 '.sidebar{position:fixed!important;left:0!important;top:0!important;bottom:0!important;width:min(82vw,300px)!important;max-width:300px!important;min-height:100dvh!important;height:100dvh!important;overflow-y:auto!important;overflow-x:hidden!important;transform:translate3d(-105%,0,0)!important;transition:transform .25s ease!important;z-index:10002!important;visibility:visible!important;pointer-events:auto!important;-webkit-overflow-scrolling:touch!important;display:flex!important;touch-action:pan-y!important}' +
@@ -1052,12 +1106,28 @@ class MainActivity : Activity() {
                 '.examo-mobile-dashboard-page .schedule-item span{font-size:7.5px!important}' +
                 '@media(max-width:360px){.examo-mobile-dashboard-page{padding-bottom:106px!important}.examo-mobile-dashboard-page .quick-actions-card{left:8px!important;right:8px!important;bottom:6px!important;padding:8px!important}.examo-mobile-dashboard-page .quick-actions{gap:4px!important}.examo-mobile-dashboard-page .quick-actions button{font-size:7.3px!important;min-height:31px!important}.examo-mobile-dashboard-page .dashboard-grid{gap:6px!important}}' +
 
-                /* Single integrated graduation-cap + stacked-books illustration. */
+                /* One clean graduation-cap + stacked-books illustration, matching the supplied reference. */
                 '.examo-mobile-dashboard-page .dashboard-heading{position:relative!important;isolation:isolate!important}' +
-                '.examo-mobile-dashboard-page .dashboard-heading>div{width:68%!important;max-width:68%!important;flex:0 1 68%!important;position:relative!important;z-index:3!important}' +
-                '.examo-mobile-dashboard-page .dashboard-heading:before{content:none!important;display:none!important}' +
-                '.examo-mobile-dashboard-page .dashboard-heading:after{content:""!important;display:block!important;position:absolute!important;right:5px!important;top:50%!important;bottom:auto!important;transform:translateY(-50%)!important;width:98px!important;height:72px!important;z-index:2!important;background-image:url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%20160%20116%22%3E%0A%3Cdefs%3E%0A%3ClinearGradient%20id=%22n%22%20x2=%221%22%20y2=%221%22%3E%3Cstop%20stop-color=%22%23244d87%22/%3E%3Cstop%20offset=%221%22%20stop-color=%22%23071d47%22/%3E%3C/linearGradient%3E%0A%3ClinearGradient%20id=%22b%22%20x2=%221%22%20y2=%221%22%3E%3Cstop%20stop-color=%22%23428aff%22/%3E%3Cstop%20offset=%221%22%20stop-color=%22%230751c8%22/%3E%3C/linearGradient%3E%0A%3ClinearGradient%20id=%22o%22%20x2=%221%22%20y2=%221%22%3E%3Cstop%20stop-color=%22%23ffd45b%22/%3E%3Cstop%20offset=%221%22%20stop-color=%22%23ff9417%22/%3E%3C/linearGradient%3E%0A%3ClinearGradient%20id=%22r%22%20x2=%221%22%20y2=%221%22%3E%3Cstop%20stop-color=%22%23ff786e%22/%3E%3Cstop%20offset=%221%22%20stop-color=%22%23df3947%22/%3E%3C/linearGradient%3E%0A%3C/defs%3E%0A%3Cg%20stroke-linejoin=%22round%22%3E%0A%3Cpath%20d=%22M35%2086h91l12%208-10%2010H39l-11-9z%22%20fill=%22url(%23b)%22/%3E%3Cpath%20d=%22M40%2087h85l8%206H37z%22%20fill=%22%23f8fbff%22/%3E%0A%3Cpath%20d=%22M27%2067h98l13%208-10%2010H31l-10-9z%22%20fill=%22url(%23o)%22/%3E%3Cpath%20d=%22M32%2068h91l9%206H29z%22%20fill=%22%23fff8e8%22/%3E%0A%3Cpath%20d=%22M39%2048h91l12%208-10%2010H43l-11-9z%22%20fill=%22url(%23r)%22/%3E%3Cpath%20d=%22M44%2049h83l8%206H40z%22%20fill=%22%23fff5f4%22/%3E%0A%3Cpath%20d=%22M23%2031L83%209l66%2022-62%2024z%22%20fill=%22url(%23n)%22%20stroke=%22%23315587%22%20stroke-width=%221.3%22/%3E%0A%3Cpath%20d=%22M46%2039l41%2016%2040-16-4%2017Q87%2079%2050%2056z%22%20fill=%22%23102e5e%22/%3E%0A%3Cpath%20d=%22M148%2031l6%2029%22%20stroke=%22%23f6b72c%22%20stroke-width=%223%22%20stroke-linecap=%22round%22%20fill=%22none%22/%3E%3Ccircle%20cx=%22154%22%20cy=%2262%22%20r=%223.5%22%20fill=%22%23f6b72c%22/%3E%3Ccircle%20cx=%2283%22%20cy=%229%22%20r=%222.3%22%20fill=%22%23f7bd33%22/%3E%0A%3Cpath%20d=%22M15%2015l5-8M7%2024l-5-3M27%207l3-5%22%20stroke=%22%232f78ed%22%20stroke-width=%222.5%22%20stroke-linecap=%22round%22%20fill=%22none%22/%3E%0A%3C/g%3E%3C/svg%3E")!important;background-repeat:no-repeat!important;background-position:center!important;background-size:contain!important;filter:drop-shadow(0 3px 3px rgba(24,64,115,.12))!important;pointer-events:none!important}' +
-                '@media(max-width:360px){.examo-mobile-dashboard-page .dashboard-heading>div{width:66%!important;max-width:66%!important;flex-basis:66%!important}.examo-mobile-dashboard-page .dashboard-heading:after{width:88px!important;height:65px!important;right:4px!important}}' +
+                '.examo-mobile-dashboard-page .dashboard-heading>div{width:67%!important;max-width:67%!important;flex:0 1 67%!important;position:relative!important;z-index:3!important}' +
+                '.examo-mobile-dashboard-page .dashboard-heading:before{display:none!important;content:none!important}' +
+                '.examo-mobile-dashboard-page .dashboard-heading:after{content:""!important;display:block!important;position:absolute!important;right:4px!important;top:50%!important;bottom:auto!important;transform:translateY(-50%)!important;width:106px!important;height:78px!important;z-index:2!important;background-image:' + dashboardCapBooksUrl + '!important;background-repeat:no-repeat!important;background-position:center!important;background-size:contain!important;filter:drop-shadow(0 3px 4px rgba(24,64,115,.16))!important;pointer-events:none!important}' +
+
+                /* Stable dashboard card dimensions. More records must not grow cards. */
+                '.examo-mobile-dashboard-page .dashboard-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-template-rows:repeat(2,clamp(205px,26vh,230px))!important;grid-auto-rows:clamp(205px,26vh,230px)!important;align-items:stretch!important}' +
+                '.examo-mobile-dashboard-page .dashboard-grid>.dashboard-card{display:flex!important;flex-direction:column!important;height:100%!important;min-height:0!important;max-height:100%!important;overflow:hidden!important}' +
+                '.examo-mobile-dashboard-page .dashboard-grid>.dashboard-card .card-heading{flex:0 0 auto!important;min-height:47px!important}' +
+                '.examo-mobile-dashboard-page .dashboard-grid>.dashboard-card .exam-list,.examo-mobile-dashboard-page .dashboard-grid>.dashboard-card .form-deadline-list,.examo-mobile-dashboard-page .dashboard-grid>.dashboard-card .schedule-list{flex:1 1 auto!important;min-height:0!important;max-height:100%!important;overflow:hidden!important}' +
+                '.examo-mobile-dashboard-page .exam-list>.exam-list-item:nth-child(n+4),.examo-mobile-dashboard-page .form-deadline-list>.deadline-item:nth-child(n+4),.examo-mobile-dashboard-page .schedule-list>.schedule-item:nth-child(n+4){display:none!important}' +
+                '.examo-mobile-dashboard-page .exam-list-item,.examo-mobile-dashboard-page .deadline-item,.examo-mobile-dashboard-page .schedule-item{flex:0 0 auto!important;min-height:0!important}' +
+                '.examo-mobile-dashboard-page .deadline-item{padding:6px 6px!important}' +
+                '.examo-mobile-dashboard-page .deadline-item strong{font-size:7.4px!important;line-height:1.16!important}' +
+                '.examo-mobile-dashboard-page .deadline-item>div>span{font-size:7.1px!important;line-height:1.13!important}' +
+                '.examo-mobile-dashboard-page .schedule-item{padding:6px 5px!important}' +
+                '.examo-mobile-dashboard-page .schedule-item strong{font-size:8.8px!important}' +
+                '.examo-mobile-dashboard-page .schedule-item span{font-size:7.4px!important}' +
+                '.examo-mobile-dashboard-page .calendar{flex:1 1 auto!important;min-height:0!important;overflow:hidden!important;padding:5px 4px!important}' +
+                '.examo-mobile-dashboard-page .calendar-days{grid-auto-rows:minmax(0,1fr)!important}' +
+                '@media(max-width:360px){.examo-mobile-dashboard-page .dashboard-heading>div{width:64%!important;max-width:64%!important;flex-basis:64%!important}.examo-mobile-dashboard-page .dashboard-heading:after{width:96px!important;height:72px!important;right:2px!important}.examo-mobile-dashboard-page .dashboard-grid{grid-template-rows:repeat(2,clamp(195px,25vh,220px))!important;grid-auto-rows:clamp(195px,25vh,220px)!important;gap:6px!important}}' +
                 '}';
               (document.head || document.documentElement).appendChild(css);
 
