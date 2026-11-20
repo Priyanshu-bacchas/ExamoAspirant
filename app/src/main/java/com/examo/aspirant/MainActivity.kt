@@ -1010,6 +1010,47 @@ class MainActivity : Activity() {
                 '.examo-mobile-dashboard-page .quick-icon{width:12px!important;height:12px!important;flex:0 0 12px!important}' +
                 '@media(max-width:360px){.examo-mobile-dashboard-page .dashboard-heading>div{width:72%!important;max-width:72%!important;flex-basis:72%!important}.examo-mobile-dashboard-page .dashboard-grid{gap:5px!important}.examo-mobile-dashboard-page .card-heading h2{font-size:9.5px!important}.examo-mobile-dashboard-page .deadline-item strong{font-size:6.8px!important}.examo-mobile-dashboard-page .quick-actions button{font-size:6.8px!important;gap:2px!important}}' +
                 '@media(max-height:800px) and (max-width:600px){.examo-mobile-dashboard-page .dashboard-heading{min-height:65px!important}.examo-mobile-dashboard-page .stats-grid{margin-bottom:5px!important}.examo-mobile-dashboard-page .dashboard-grid{gap:5px!important}.examo-mobile-dashboard-page .calendar-day{min-height:14px!important}.examo-mobile-dashboard-page .quick-actions-card{margin-top:5px!important;padding:6px!important}.examo-mobile-dashboard-page .quick-actions button{min-height:27px!important}}' +
+
+                /* Dashboard: fixed Quick Actions dock + slightly larger readable sections. */
+                '.examo-mobile-dashboard-page{padding-bottom:112px!important;overflow-x:hidden!important}' +
+                '.examo-mobile-dashboard-page .quick-actions-card{position:fixed!important;left:12px!important;right:12px!important;bottom:8px!important;z-index:10010!important;width:auto!important;max-width:none!important;min-width:0!important;margin:0!important;padding:9px 9px!important;border-radius:14px!important;border:1px solid #c6d9f4!important;background:linear-gradient(145deg,rgba(239,246,255,.98) 0%,rgba(224,237,255,.98) 100%)!important;box-shadow:0 7px 20px rgba(23,58,108,.18),0 1px 3px rgba(23,58,108,.12)!important;backdrop-filter:blur(12px)!important;-webkit-backdrop-filter:blur(12px)!important}' +
+                '.examo-mobile-dashboard-page .quick-actions-card h2{font-size:11px!important;line-height:1.2!important;font-weight:600!important}' +
+                '.examo-mobile-dashboard-page .quick-actions-card p{font-size:8.5px!important;line-height:1.2!important;margin-top:3px!important}' +
+                '.examo-mobile-dashboard-page .quick-actions{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;width:100%!important;max-width:100%!important;min-width:0!important;gap:6px!important;margin:7px 0 0!important}' +
+                '.examo-mobile-dashboard-page .quick-actions button{min-width:0!important;width:100%!important;min-height:33px!important;padding:5px 3px!important;gap:3px!important;font-size:8px!important;line-height:1.1!important;white-space:nowrap!important;border-radius:9px!important}' +
+                '.examo-mobile-dashboard-page .quick-actions button svg{width:13px!important;height:13px!important;flex:0 0 13px!important}' +
+                '.examo-mobile-dashboard-page .quick-icon{width:13px!important;height:13px!important;flex:0 0 13px!important}' +
+                '.examo-mobile-dashboard-page .dashboard-heading{min-height:76px!important;margin-bottom:8px!important;padding:8px 10px!important}' +
+                '.examo-mobile-dashboard-page .dashboard-heading h1{font-size:16px!important;line-height:1.16!important}' +
+                '.examo-mobile-dashboard-page .dashboard-heading p:not(.eyebrow){font-size:9.5px!important;line-height:1.2!important}' +
+                '.examo-mobile-dashboard-page .stats-grid{margin-bottom:9px!important;padding:5px 3px!important}' +
+                '.examo-mobile-dashboard-page .stat-card{gap:3px!important;padding:4px 2px!important}' +
+                '.examo-mobile-dashboard-page .stat-icon{width:28px!important;height:28px!important;min-width:28px!important}' +
+                '.examo-mobile-dashboard-page .stat-icon svg{width:17px!important;height:17px!important}' +
+                '.examo-mobile-dashboard-page .stat-card span{min-height:18px!important;font-size:8.5px!important;line-height:1.12!important}' +
+                '.examo-mobile-dashboard-page .stat-card strong{font-size:17px!important;line-height:1.05!important}' +
+                '.examo-mobile-dashboard-page .stat-card small{font-size:8px!important;line-height:1.12!important}' +
+                '.examo-mobile-dashboard-page .dashboard-grid{gap:8px!important}' +
+                '.examo-mobile-dashboard-page .dashboard-card{border-radius:13px!important}' +
+                '.examo-mobile-dashboard-page .card-heading{padding:8px 7px!important;gap:4px!important}' +
+                '.examo-mobile-dashboard-page .card-heading h2{font-size:10.5px!important;line-height:1.18!important}' +
+                '.examo-mobile-dashboard-page .card-heading p{font-size:8px!important;line-height:1.16!important;margin-top:3px!important}' +
+                '.examo-mobile-dashboard-page .text-button{font-size:8px!important}' +
+                '.examo-mobile-dashboard-page .deadline-item{padding:6px 6px!important;gap:4px!important}' +
+                '.examo-mobile-dashboard-page .deadline-item strong{font-size:7.6px!important;line-height:1.15!important}' +
+                '.examo-mobile-dashboard-page .deadline-item>div>span{font-size:7.4px!important;line-height:1.13!important}' +
+                '.examo-mobile-dashboard-page .status-badge{font-size:7px!important;padding:3px 5px!important}' +
+                '.examo-mobile-dashboard-page .dashboard-empty{min-height:48px!important;font-size:8.5px!important}' +
+                '.examo-mobile-dashboard-page .calendar{padding:6px 5px!important}' +
+                '.examo-mobile-dashboard-page .calendar-weekdays span{font-size:7.5px!important;padding:2px 0!important}' +
+                '.examo-mobile-dashboard-page .calendar-day{min-height:17px!important;font-size:7.8px!important}' +
+                '.examo-mobile-dashboard-page .calendar-legend{margin-top:6px!important;padding:5px 6px!important;font-size:7.6px!important}' +
+                '.examo-mobile-dashboard-page .schedule-list{padding:5px 6px!important}' +
+                '.examo-mobile-dashboard-page .schedule-item{padding:6px 5px!important;gap:5px!important}' +
+                '.examo-mobile-dashboard-page .schedule-date{min-width:29px!important;font-size:8.5px!important}' +
+                '.examo-mobile-dashboard-page .schedule-item strong{font-size:9px!important}' +
+                '.examo-mobile-dashboard-page .schedule-item span{font-size:7.5px!important}' +
+                '@media(max-width:360px){.examo-mobile-dashboard-page{padding-bottom:106px!important}.examo-mobile-dashboard-page .quick-actions-card{left:8px!important;right:8px!important;bottom:6px!important;padding:8px!important}.examo-mobile-dashboard-page .quick-actions{gap:4px!important}.examo-mobile-dashboard-page .quick-actions button{font-size:7.3px!important;min-height:31px!important}.examo-mobile-dashboard-page .dashboard-grid{gap:6px!important}}' +
                 '}';
               (document.head || document.documentElement).appendChild(css);
 
