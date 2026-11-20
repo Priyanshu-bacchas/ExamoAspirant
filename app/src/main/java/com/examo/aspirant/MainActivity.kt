@@ -799,8 +799,74 @@ class MainActivity : Activity() {
                 '.examo-mobile-subscription-page .hs-side>.hs-panel:nth-of-type(2) .hs-link-btn{font-size:14px!important}' +
                 '@media(max-width:380px){.examo-mobile-subscription-page .hs-plan-body{grid-template-columns:minmax(0,1fr) minmax(112px,40%)!important;column-gap:9px!important;padding:12px!important}.examo-mobile-subscription-page .hs-plan-features{column-gap:11px!important;font-size:13px!important}.examo-mobile-subscription-page .hs-plan-card .hs-faq-card-head{padding:10px 12px!important}.examo-mobile-subscription-page .hs-plan-card .hs-faq-card-head h3{font-size:16px!important}}' +
                 '@media(max-width:330px){.examo-mobile-subscription-page .hs-plan-body{grid-template-columns:minmax(0,1fr)!important;grid-template-areas:"label" "features" "price" "sub" "button"!important}.examo-mobile-subscription-page .hs-plan-card .hs-btn{margin-top:12px!important}.examo-mobile-subscription-page .hs-plan-features{grid-template-columns:minmax(0,1fr)!important}}' +
+                /* Dashboard: compact Examo study-overview layout, native WebView only. */
+                '.examo-mobile-dashboard-page{width:100%!important;max-width:100%!important;min-width:0!important;padding:0!important;color:#15284a!important;font-family:"Roboto Condensed","Arial Narrow",sans-serif!important}' +
+                '.examo-mobile-dashboard-page .dashboard-heading{position:relative!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;min-height:91px!important;margin:0 0 10px!important;padding:11px 14px!important;overflow:hidden!important;background:linear-gradient(112deg,#edf5ff 0%,#e4efff 62%,#cfe3ff 100%)!important;border:1px solid #c4dbfb!important;border-radius:15px!important;box-shadow:0 4px 10px rgba(34,82,145,.09)!important}' +
+                '.examo-mobile-dashboard-page .dashboard-heading>div{position:relative!important;z-index:1!important;width:100%!important;max-width:79%!important;min-width:0!important}' +
+                '.examo-mobile-dashboard-page .dashboard-heading:after{content:"🎓📚"!important;position:absolute!important;right:10px!important;bottom:12px!important;z-index:0!important;font-size:32px!important;line-height:1!important;letter-spacing:-8px!important;white-space:nowrap!important;filter:drop-shadow(0 3px 2px rgba(30,70,130,.12))}' +
+                '.examo-mobile-dashboard-page .dashboard-heading .eyebrow{margin:0 0 5px!important;color:#1762d5!important;font-size:10px!important;font-weight:500!important;line-height:1.2!important}' +
+                '.examo-mobile-dashboard-page .dashboard-heading h1{margin:0!important;color:#10264a!important;font-family:"Roboto Condensed","Arial Narrow",sans-serif!important;font-size:18px!important;font-weight:600!important;line-height:1.2!important;letter-spacing:-.25px!important;white-space:normal!important}' +
+                '.examo-mobile-dashboard-page .dashboard-heading p:not(.eyebrow){margin:5px 0 0!important;color:#536b91!important;font-size:11px!important;font-weight:400!important;line-height:1.25!important}' +
+                '.examo-mobile-dashboard-page .stats-grid{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:0!important;width:100%!important;margin:0 0 11px!important;padding:7px 3px!important;background:linear-gradient(145deg,#ffffff 0%,#f5f9ff 100%)!important;border:1px solid #d1e0f3!important;border-radius:15px!important;box-shadow:0 5px 12px rgba(30,68,120,.09)!important}' +
+                '.examo-mobile-dashboard-page .stat-card{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:3px!important;min-width:0!important;margin:0!important;padding:5px 2px!important;border:0!important;border-right:1px solid #cfdef1!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;text-align:center!important}' +
+                '.examo-mobile-dashboard-page .stat-card:last-child{border-right:0!important}' +
+                '.examo-mobile-dashboard-page .stat-icon{display:flex!important;align-items:center!important;justify-content:center!important;width:32px!important;height:32px!important;min-width:32px!important;margin:0 0 1px!important;border-radius:50%!important}' +
+                '.examo-mobile-dashboard-page .stat-icon svg{width:18px!important;height:18px!important}' +
+                '.examo-mobile-dashboard-page .stat-card>div:last-child{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;min-width:0!important;width:100%!important}' +
+                '.examo-mobile-dashboard-page .stat-card span{display:block!important;min-height:22px!important;margin:0!important;color:#233956!important;font-size:9px!important;font-weight:500!important;line-height:1.12!important;text-align:center!important;white-space:normal!important;overflow-wrap:anywhere!important}' +
+                '.examo-mobile-dashboard-page .stat-card strong{display:block!important;margin:0!important;color:#13284a!important;font-size:19px!important;font-weight:700!important;line-height:1.08!important}' +
+                '.examo-mobile-dashboard-page .stat-card small{display:block!important;margin:2px 0 0!important;color:#637b9e!important;font-size:8.5px!important;font-weight:400!important;line-height:1.12!important;text-align:center!important;white-space:normal!important}' +
+                '.examo-mobile-dashboard-page .dashboard-grid{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:10px!important;width:100%!important;min-width:0!important;align-items:stretch!important}' +
+                '.examo-mobile-dashboard-page .dashboard-card{display:flex!important;flex-direction:column!important;min-width:0!important;max-width:100%!important;overflow:hidden!important;background:linear-gradient(145deg,#ffffff 0%,#f7faff 100%)!important;border:1px solid #d5e2f3!important;border-radius:14px!important;box-shadow:0 5px 12px rgba(35,70,120,.09)!important}' +
+                '.examo-mobile-dashboard-page .dashboard-card:nth-child(2){background:linear-gradient(145deg,#ffffff 0%,#f6f7ff 100%)!important;border-color:#dcdcf4!important}' +
+                '.examo-mobile-dashboard-page .dashboard-card:nth-child(3),.examo-mobile-dashboard-page .dashboard-card:nth-child(4){grid-column:auto!important}' +
+                '.examo-mobile-dashboard-page .card-heading{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:5px!important;min-width:0!important;padding:10px 9px!important;border-bottom:1px solid #e3ebf6!important}' +
+                '.examo-mobile-dashboard-page .card-heading>div{min-width:0!important}' +
+                '.examo-mobile-dashboard-page .card-heading h2{margin:0!important;color:#172c4c!important;font-size:12px!important;font-weight:600!important;line-height:1.2!important;letter-spacing:-.1px!important}' +
+                '.examo-mobile-dashboard-page .card-heading p{margin:4px 0 0!important;color:#647b9c!important;font-size:9px!important;font-weight:400!important;line-height:1.2!important}' +
+                '.examo-mobile-dashboard-page .card-heading>svg{width:17px!important;height:17px!important;flex:0 0 auto!important;color:#193b64!important}' +
+                '.examo-mobile-dashboard-page .text-button{display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:2px!important;min-width:0!important;padding:2px 0!important;color:#0960e8!important;font-size:9px!important;font-weight:600!important;white-space:nowrap!important}' +
+                '.examo-mobile-dashboard-page .text-button svg{width:12px!important;height:12px!important}' +
+                '.examo-mobile-dashboard-page .exam-list,.examo-mobile-dashboard-page .form-deadline-list,.examo-mobile-dashboard-page .schedule-list{min-width:0!important}' +
+                '.examo-mobile-dashboard-page .exam-list-item,.examo-mobile-dashboard-page .deadline-item{display:flex!important;align-items:center!important;gap:6px!important;min-width:0!important;padding:8px 8px!important;border-bottom:1px solid #e8eef7!important}' +
+                '.examo-mobile-dashboard-page .list-icon{display:none!important}' +
+                '.examo-mobile-dashboard-page .list-main,.examo-mobile-dashboard-page .deadline-item>div{flex:1!important;min-width:0!important}' +
+                '.examo-mobile-dashboard-page .list-main strong,.examo-mobile-dashboard-page .deadline-item strong{display:block!important;color:#213855!important;font-size:9.5px!important;font-weight:600!important;line-height:1.2!important;overflow-wrap:anywhere!important}' +
+                '.examo-mobile-dashboard-page .list-main span,.examo-mobile-dashboard-page .deadline-item>div>span{display:block!important;margin:3px 0 0!important;color:#667e9e!important;font-size:8.5px!important;font-weight:400!important;line-height:1.15!important}' +
+                '.examo-mobile-dashboard-page .small-status,.examo-mobile-dashboard-page .status-badge{flex:0 0 auto!important;padding:4px 7px!important;border-radius:999px!important;font-size:8px!important;font-weight:500!important;white-space:nowrap!important}' +
+                '.examo-mobile-dashboard-page .dashboard-empty{display:flex!important;align-items:center!important;justify-content:center!important;min-height:78px!important;padding:12px 8px!important;color:#637b9e!important;font-size:10px!important;font-weight:400!important;text-align:center!important}' +
+                '.examo-mobile-dashboard-page .calendar{min-width:0!important;padding:8px 7px 9px!important}' +
+                '.examo-mobile-dashboard-page .calendar-weekdays,.examo-mobile-dashboard-page .calendar-days{grid-template-columns:repeat(7,minmax(0,1fr))!important;gap:1px!important}' +
+                '.examo-mobile-dashboard-page .calendar-weekdays span{padding:3px 0!important;color:#7186a4!important;font-size:8px!important;font-weight:500!important}' +
+                '.examo-mobile-dashboard-page .calendar-day{min-height:22px!important;width:100%!important;border-radius:50%!important;color:#344c6d!important;font-size:8.5px!important;font-weight:400!important}' +
+                '.examo-mobile-dashboard-page .calendar-day.today{background:#1764ed!important;color:#fff!important;font-weight:600!important}' +
+                '.examo-mobile-dashboard-page .calendar-legend{margin-top:8px!important;padding:6px 7px!important;border-radius:8px!important;background:#edf4ff!important;color:#577196!important;font-size:8.5px!important;font-weight:400!important}' +
+                '.examo-mobile-dashboard-page .calendar-legend span{width:6px!important;height:6px!important;flex:0 0 6px!important;background:#1764ed!important}' +
+                '.examo-mobile-dashboard-page .schedule-list{padding:6px 8px!important}' +
+                '.examo-mobile-dashboard-page .schedule-item{display:flex!important;align-items:center!important;gap:7px!important;padding:9px 7px!important;border:0!important;border-radius:9px!important;background:#edf4ff!important}' +
+                '.examo-mobile-dashboard-page .schedule-date{display:flex!important;align-items:center!important;justify-content:center!important;min-width:34px!important;padding:5px 3px!important;border-right:1px solid #c7d9f2!important;color:#1261df!important;font-size:10px!important;font-weight:600!important;line-height:1.15!important}' +
+                '.examo-mobile-dashboard-page .schedule-item>div:last-child{min-width:0!important}' +
+                '.examo-mobile-dashboard-page .schedule-item strong{display:block!important;color:#1b3457!important;font-size:10px!important;font-weight:600!important;line-height:1.2!important}' +
+                '.examo-mobile-dashboard-page .schedule-item span{display:block!important;margin:4px 0 0!important;color:#627b9d!important;font-size:8.5px!important;font-weight:400!important;line-height:1.15!important;overflow-wrap:anywhere!important}' +
+                '.examo-mobile-dashboard-page .quick-actions-card{display:block!important;min-width:0!important;margin:11px 0 0!important;padding:11px 10px!important;background:linear-gradient(145deg,#edf4ff 0%,#e4eefc 100%)!important;border:1px solid #cbdcf4!important;border-radius:15px!important;box-shadow:0 5px 12px rgba(35,70,120,.09)!important}' +
+                '.examo-mobile-dashboard-page .quick-actions-card h2{margin:0!important;color:#1a355c!important;font-size:13px!important;font-weight:600!important;line-height:1.2!important}' +
+                '.examo-mobile-dashboard-page .quick-actions-card p{margin:3px 0 0!important;color:#637b9e!important;font-size:9px!important;font-weight:400!important;line-height:1.2!important}' +
+                '.examo-mobile-dashboard-page .quick-actions{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px!important;width:100%!important;margin:9px 0 0!important}' +
+                '.examo-mobile-dashboard-page .quick-actions button{display:flex!important;align-items:center!important;justify-content:center!important;gap:4px!important;min-width:0!important;min-height:36px!important;padding:6px 4px!important;border:1px solid #c8d8f0!important;border-radius:9px!important;background:#fff!important;color:#253e60!important;font-size:8.5px!important;font-weight:500!important;line-height:1.15!important;white-space:nowrap!important;box-shadow:0 2px 4px rgba(25,60,110,.05)!important}' +
+                '.examo-mobile-dashboard-page .quick-actions button svg{width:14px!important;height:14px!important;flex:0 0 auto!important;color:#173d6c!important}' +
+                '.examo-mobile-dashboard-page .quick-icon{width:14px!important;height:14px!important;flex:0 0 14px!important;font-size:10px!important}' +
+                '.examo-mobile-dashboard-page .error-box{margin-bottom:9px!important;padding:8px 10px!important;font-size:10px!important}' +
+                '@media(max-width:360px){.examo-mobile-dashboard-page .dashboard-heading{min-height:84px!important;padding:9px 11px!important}.examo-mobile-dashboard-page .dashboard-heading h1{font-size:16px!important}.examo-mobile-dashboard-page .dashboard-heading p:not(.eyebrow){font-size:10px!important}.examo-mobile-dashboard-page .stat-card span{font-size:8px!important}.examo-mobile-dashboard-page .stat-card small{font-size:7.5px!important}.examo-mobile-dashboard-page .dashboard-grid{grid-template-columns:minmax(0,1fr)!important}.examo-mobile-dashboard-page .card-heading h2{font-size:13px!important}.examo-mobile-dashboard-page .deadline-item strong{font-size:11px!important}.examo-mobile-dashboard-page .quick-actions button{font-size:8px!important}}' +
                 '}';
               (document.head || document.documentElement).appendChild(css);
+
+              function decorateDashboard() {
+                if (window.innerWidth > 600) return;
+                var dashboardHeading = document.querySelector('.page .dashboard-heading');
+                if (!dashboardHeading) return;
+                var dashboardPage = dashboardHeading.closest('.page');
+                if (dashboardPage) dashboardPage.classList.add('examo-mobile-dashboard-page');
+              }
 
               function decorateDataTables() {
                 if (window.innerWidth > 600) return;
@@ -999,10 +1065,12 @@ class MainActivity : Activity() {
               });
               bindMenu();
               bindSidebarSwipe();
+              decorateDashboard();
               if (!window.__examoAndroidNavObserver) {
                 window.__examoAndroidNavObserver = new MutationObserver(function() {
                   bindMenu();
                   bindSidebarSwipe();
+                  decorateDashboard();
                   decorateDataTables();
                 });
                 window.__examoAndroidNavObserver.observe(document.documentElement,{childList:true,subtree:true});
