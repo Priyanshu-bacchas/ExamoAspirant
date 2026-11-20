@@ -1143,6 +1143,11 @@ class MainActivity : Activity() {
                 '.examo-mobile-dashboard-page .exam-list .list-main span,.examo-mobile-dashboard-page .form-deadline-list .deadline-item>div>span,.examo-mobile-dashboard-page .schedule-list .schedule-item span{display:block!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}' +
                 '.examo-mobile-dashboard-page .dashboard-grid>.dashboard-card .dashboard-empty{flex:1 1 auto!important;min-height:0!important;display:flex!important;align-items:center!important;justify-content:center!important}' +
                 '@media(max-width:360px){.examo-mobile-dashboard-page .dashboard-grid{grid-template-rows:clamp(184px,25vh,208px) clamp(184px,25vh,208px)!important;grid-auto-rows:clamp(184px,25vh,208px)!important}.examo-mobile-dashboard-page .dashboard-heading:after{width:80px!important;height:74px!important;right:3px!important}.examo-mobile-dashboard-page .dashboard-heading>div{width:65%!important;max-width:65%!important;flex-basis:65%!important}}' +
+
+                /* Quick Actions: keep it in document flow, never overlay the calendar/schedule. */
+                '.examo-mobile-dashboard-page{padding-bottom:10px!important}' +
+                '.examo-mobile-dashboard-page .quick-actions-card{position:static!important;inset:auto!important;top:auto!important;right:auto!important;bottom:auto!important;left:auto!important;z-index:auto!important;transform:none!important;width:100%!important;max-width:100%!important;min-width:0!important;margin:9px 0 10px!important}' +
+                '@media(max-width:360px){.examo-mobile-dashboard-page{padding-bottom:8px!important}.examo-mobile-dashboard-page .quick-actions-card{position:static!important;inset:auto!important;margin:8px 0 9px!important;width:100%!important}}' +
                 '}';
               (document.head || document.documentElement).appendChild(css);
 
