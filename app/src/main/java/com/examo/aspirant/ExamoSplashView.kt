@@ -79,7 +79,9 @@ class ExamoSplashView(context: Context) : LinearLayout(context) {
         // Move the text block slightly lower, keeping its alignment and style.
         addView(label("Your exams, beautifully organised.", if (veryShort) 16f else if (compact) 17f else 19f, Color.rgb(29,48,91), true),
             LayoutParams(-1, dp(if (veryShort) 28 else if (compact) 31 else 36)).apply {
-                topMargin = dp(if (veryShort) 3 else 5)
+                // Move the complete copy/chip block slightly lower without
+                // changing the illustration, its animation, or swipe footer.
+                topMargin = dp(if (veryShort) 8 else if (compact) 12 else 14)
             })
         addView(label("Exam forms, schedules, preparation and subjects — everything\na student needs, in one place.", if (veryShort) 10f else if (compact) 11f else 12f, Color.rgb(76,94,127)),
             LayoutParams(-1, dp(if (veryShort) 38 else if (compact) 42 else 46)))
