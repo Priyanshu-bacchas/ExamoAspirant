@@ -55,7 +55,9 @@ class ExamoSplashView(context: Context) : LinearLayout(context) {
         }
         header.addView(mark, LayoutParams(dp(48), dp(48)))
         val brand = LinearLayout(context).apply { orientation = VERTICAL; setPadding(dp(12),0,0,0) }
-        brand.addView(label("Examo", 23f, Color.rgb(23,48,99), true))
+        brand.addView(label("Examo", 25f, Color.rgb(23,48,99), true).apply {
+            typeface = Typeface.create("sans-serif-black", Typeface.NORMAL)
+        })
         brand.addView(label("Student Management", 11f, Color.rgb(75,98,140)))
         header.addView(brand)
         addView(header, LayoutParams(-1, dp(if (veryShort) 44 else if (compact) 48 else 54)))
@@ -235,11 +237,10 @@ private class StudentOrbitView(context: Context) : View(context) {
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         val cx=width/2f
-        val cy=height*.50f
-        // Scale against the actual full-width art viewport. The 400dp horizontal
-        // bound includes the outer icon tiles, so the larger drawing stays fully
-        // visible on narrow phones while remaining centered.
-        val scale=minOf(width.toFloat()/400f,height.toFloat()/428f).coerceIn(.55f,1.22f)
+        val cy=height*.53f
+        // Slightly enlarge the complete avatar/orbit group while keeping the
+        // outer tiles inside the full-width viewport on common phone sizes.
+        val scale=minOf(width.toFloat()/385f,height.toFloat()/412f).coerceIn(.55f,1.22f)
         // Soft orbit rings and ambient dots
         p.style=Paint.Style.STROKE; p.strokeWidth=1.3f*scale; p.color=Color.rgb(188,211,247)
         canvas.drawCircle(cx,cy,166f*scale,p)
