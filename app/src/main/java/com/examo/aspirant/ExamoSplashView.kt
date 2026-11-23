@@ -66,36 +66,36 @@ class ExamoSplashView(context: Context) : LinearLayout(context) {
         val screenWidthDp = resources.displayMetrics.widthPixels / resources.displayMetrics.density
         // Slightly enlarge the illustration while keeping it centered and
         // bounded by the available screen dimensions on compact phones.
-        val artHeightDp = minOf(screenWidthDp * 0.99f, screenHeightDp * 0.49f)
+        val artHeightDp = minOf(screenWidthDp * 0.99f, screenHeightDp * 0.51f)
             .toInt()
-            .coerceAtLeast(if (veryShort) 250 else 285)
+            .coerceAtLeast(if (veryShort) 260 else 295)
         val art = StudentOrbitView(context)
         val artParams = LayoutParams(-1, dp(artHeightDp)).apply {
             topMargin = dp(if (compact) 0 else 4)
-            bottomMargin = dp(if (veryShort) 5 else 8)
+            bottomMargin = dp(if (veryShort) 6 else 10)
         }
         addView(art, artParams)
 
         // Move the text block slightly lower, keeping its alignment and style.
-        addView(label("Your exams, beautifully organised.", if (veryShort) 16f else if (compact) 17f else 19f, Color.rgb(29,48,91), true),
-            LayoutParams(-1, dp(if (veryShort) 28 else if (compact) 31 else 36)).apply {
-                // Move the complete copy/chip block slightly lower without
-                // changing the illustration, its animation, or swipe footer.
-                topMargin = dp(if (veryShort) 8 else if (compact) 12 else 14)
+        addView(label("Your exams, beautifully organised.", if (veryShort) 17f else if (compact) 19f else 21f, Color.rgb(29,48,91), true),
+            LayoutParams(-1, dp(if (veryShort) 31 else if (compact) 36 else 40)).apply {
+                // Enlarge and lower the complete copy block while preserving
+                // the illustration motion and the bottom swipe interaction.
+                topMargin = dp(if (veryShort) 14 else if (compact) 18 else 20)
             })
-        addView(label("Exam forms, schedules, preparation and subjects — everything\na student needs, in one place.", if (veryShort) 10f else if (compact) 11f else 12f, Color.rgb(76,94,127)),
-            LayoutParams(-1, dp(if (veryShort) 38 else if (compact) 42 else 46)))
+        addView(label("Exam forms, schedules, preparation and subjects — everything\na student needs, in one place.", if (veryShort) 11f else if (compact) 12f else 13f, Color.rgb(76,94,127)),
+            LayoutParams(-1, dp(if (veryShort) 42 else if (compact) 48 else 52)))
 
         val chips = LinearLayout(context).apply { gravity = Gravity.CENTER; orientation = HORIZONTAL }
         listOf("Exam Forms", "Schedules", "Preparation").forEach { text ->
-            val chip = label(text, 10f, Color.rgb(36,62,112), true).apply {
+            val chip = label(text, if (veryShort) 10.5f else 11.5f, Color.rgb(36,62,112), true).apply {
                 background = rounded(Color.rgb(247,250,255), 24)
-                setPadding(dp(13), dp(8), dp(13), dp(8))
+                setPadding(dp(15), dp(9), dp(15), dp(9))
             }
             val lp = LayoutParams(-2, -2).apply { marginStart = dp(4); marginEnd = dp(4) }
             chips.addView(chip, lp)
         }
-        addView(chips, LayoutParams(-1, dp(if (veryShort) 32 else if (compact) 36 else 40)))
+        addView(chips, LayoutParams(-1, dp(if (veryShort) 36 else if (compact) 42 else 46)))
 
         // Consume the remaining vertical space here so the swipe grip and hint
         // stay anchored close to the bottom edge on both compact and tall phones.
@@ -233,7 +233,7 @@ private class StudentOrbitView(context: Context) : View(context) {
         val cx=width/2f
         val cy=height*.50f
         // The drawing scales up slightly within the same centered orbit view.
-        val scale=(width.coerceAtMost(height).toFloat()/405f).coerceIn(.55f,1.12f)
+        val scale=(width.coerceAtMost(height).toFloat()/405f).coerceIn(.55f,1.22f)
         // Soft orbit rings and ambient dots
         p.style=Paint.Style.STROKE; p.strokeWidth=1.3f*scale; p.color=Color.rgb(188,211,247)
         canvas.drawCircle(cx,cy,166f*scale,p)
