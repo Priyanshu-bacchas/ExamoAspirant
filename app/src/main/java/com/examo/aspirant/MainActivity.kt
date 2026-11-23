@@ -1159,13 +1159,15 @@ class MainActivity : Activity() {
                 '.examo-mobile-dashboard-page .quick-actions-card{margin-top:9px!important;margin-bottom:9px!important}' +
                 '@media(max-width:360px){.examo-mobile-dashboard-page .dashboard-heading{min-height:62px!important;padding:5px 8px!important}.examo-mobile-dashboard-page .dashboard-heading>div{width:74%!important;max-width:74%!important;flex-basis:74%!important}.examo-mobile-dashboard-page .dashboard-heading h1{font-size:13.5px!important;letter-spacing:-.32px!important;white-space:nowrap!important}.examo-mobile-dashboard-page .dashboard-heading p:not(.eyebrow){font-size:8.5px!important;line-height:1.12!important}.examo-mobile-dashboard-page .dashboard-heading:after{width:88px!important;height:66px!important;right:2px!important}.examo-mobile-dashboard-page .dashboard-grid{grid-template-rows:repeat(2,clamp(184px,23vh,198px))!important;grid-auto-rows:clamp(184px,23vh,198px)!important}}' +
 
-                /* Tiny hero + stats adjustment only: preserve overall page width and scale. */
+                /* Precise banner inset + slightly shorter stats strip; preserve page scale. */
                 '.examo-mobile-dashboard-page .dashboard-heading{min-height:74px!important;height:auto!important;padding:7px 9px!important;margin-bottom:8px!important}' +
-                '.examo-mobile-dashboard-page .dashboard-heading:after{width:106px!important;height:80px!important;right:3px!important;top:50%!important;bottom:auto!important;transform:translateY(-50%)!important;background-size:contain!important}' +
+                '.examo-mobile-dashboard-page .dashboard-heading:after{width:100px!important;height:72px!important;right:10px!important;top:50%!important;bottom:auto!important;transform:translateY(-50%)!important;background-size:contain!important}' +
                 '.examo-mobile-dashboard-page .dashboard-heading>div{width:74%!important;max-width:74%!important;flex:0 1 74%!important}' +
-                '.examo-mobile-dashboard-page .stats-grid{padding:2px 3px!important;margin-bottom:9px!important}' +
-                '.examo-mobile-dashboard-page .stat-card{padding:2px 2px!important;gap:2px!important}' +
-                '@media(max-width:360px){.examo-mobile-dashboard-page .dashboard-heading{min-height:70px!important;padding:6px 8px!important}.examo-mobile-dashboard-page .dashboard-heading:after{width:98px!important;height:74px!important;right:2px!important}.examo-mobile-dashboard-page .stats-grid{padding:1px 2px!important}.examo-mobile-dashboard-page .stat-card{padding:1px 1px!important}}' +
+                '.examo-mobile-dashboard-page .stats-grid{padding:0 3px!important;margin-bottom:9px!important}' +
+                '.examo-mobile-dashboard-page .stat-card{padding:1px 2px!important;gap:1px!important}' +
+                '.examo-mobile-dashboard-page .stat-icon{width:26px!important;height:26px!important;min-width:26px!important}' +
+                '.examo-mobile-dashboard-page .stat-icon svg{width:16px!important;height:16px!important}' +
+                '@media(max-width:360px){.examo-mobile-dashboard-page .dashboard-heading{min-height:70px!important;padding:6px 8px!important}.examo-mobile-dashboard-page .dashboard-heading:after{width:94px!important;height:68px!important;right:8px!important}.examo-mobile-dashboard-page .stats-grid{padding:0 2px!important}.examo-mobile-dashboard-page .stat-card{padding:1px 1px!important}.examo-mobile-dashboard-page .stat-icon{width:25px!important;height:25px!important;min-width:25px!important}}' +
                 '}';
               (document.head || document.documentElement).appendChild(css);
 
