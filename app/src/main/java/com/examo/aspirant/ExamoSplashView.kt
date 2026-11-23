@@ -64,18 +64,23 @@ class ExamoSplashView(context: Context) : LinearLayout(context) {
         // leftover height. This brings the headline directly beneath the avatar
         // instead of leaving a large empty gap on tall phones.
         val screenWidthDp = resources.displayMetrics.widthPixels / resources.displayMetrics.density
-        val artHeightDp = minOf(screenWidthDp * 0.98f, screenHeightDp * 0.46f)
+        // Slightly enlarge the illustration while keeping it centered and
+        // bounded by the available screen dimensions on compact phones.
+        val artHeightDp = minOf(screenWidthDp * 0.99f, screenHeightDp * 0.49f)
             .toInt()
             .coerceAtLeast(if (veryShort) 250 else 285)
         val art = StudentOrbitView(context)
         val artParams = LayoutParams(-1, dp(artHeightDp)).apply {
             topMargin = dp(if (compact) 0 else 4)
-            bottomMargin = dp(0)
+            bottomMargin = dp(if (veryShort) 5 else 8)
         }
         addView(art, artParams)
 
+        // Move the text block slightly lower, keeping its alignment and style.
         addView(label("Your exams, beautifully organised.", if (veryShort) 16f else if (compact) 17f else 19f, Color.rgb(29,48,91), true),
-            LayoutParams(-1, dp(if (veryShort) 28 else if (compact) 31 else 36)))
+            LayoutParams(-1, dp(if (veryShort) 28 else if (compact) 31 else 36)).apply {
+                topMargin = dp(if (veryShort) 3 else 5)
+            })
         addView(label("Exam forms, schedules, preparation and subjects — everything\na student needs, in one place.", if (veryShort) 10f else if (compact) 11f else 12f, Color.rgb(76,94,127)),
             LayoutParams(-1, dp(if (veryShort) 38 else if (compact) 42 else 46)))
 
@@ -224,8 +229,9 @@ private class StudentOrbitView(context: Context) : View(context) {
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         val cx=width/2f
-        val cy=height*.49f
-        val scale=(width.coerceAtMost(height).toFloat()/430f).coerceIn(.55f,1.12f)
+        val cy=height*.50f
+        // The drawing scales up slightly within the same centered orbit view.
+        val scale=(width.coerceAtMost(height).toFloat()/405f).coerceIn(.55f,1.12f)
         // Soft orbit rings and ambient dots
         p.style=Paint.Style.STROKE; p.strokeWidth=1.3f*scale; p.color=Color.rgb(188,211,247)
         canvas.drawCircle(cx,cy,166f*scale,p)
