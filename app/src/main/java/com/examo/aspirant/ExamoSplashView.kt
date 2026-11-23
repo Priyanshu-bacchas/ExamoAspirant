@@ -71,6 +71,10 @@ class ExamoSplashView(context: Context) : LinearLayout(context) {
             .coerceAtLeast(if (veryShort) 260 else 295)
         val art = StudentOrbitView(context)
         val artParams = LayoutParams(-1, dp(artHeightDp)).apply {
+            // Let the orbit artwork use the full device width instead of the
+            // padded text column, while staying centered and inside the screen.
+            marginStart = -dp(horizontalPad)
+            marginEnd = -dp(horizontalPad)
             topMargin = dp(if (compact) 0 else 4)
             bottomMargin = dp(if (veryShort) 6 else 10)
         }
@@ -232,8 +236,10 @@ private class StudentOrbitView(context: Context) : View(context) {
         super.onDraw(canvas)
         val cx=width/2f
         val cy=height*.50f
-        // The drawing scales up slightly within the same centered orbit view.
-        val scale=(width.coerceAtMost(height).toFloat()/405f).coerceIn(.55f,1.22f)
+        // Scale against the actual full-width art viewport. The 400dp horizontal
+        // bound includes the outer icon tiles, so the larger drawing stays fully
+        // visible on narrow phones while remaining centered.
+        val scale=minOf(width.toFloat()/400f,height.toFloat()/380f).coerceIn(.55f,1.22f)
         // Soft orbit rings and ambient dots
         p.style=Paint.Style.STROKE; p.strokeWidth=1.3f*scale; p.color=Color.rgb(188,211,247)
         canvas.drawCircle(cx,cy,166f*scale,p)
