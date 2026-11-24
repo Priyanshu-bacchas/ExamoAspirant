@@ -62,16 +62,13 @@ class MainActivity : Activity() {
         getSharedPreferences("examo_auth_recovery", MODE_PRIVATE)
     }
     private var pendingLoginOtpDialog: AlertDialog? = null
+    private var loginOtpErrorText: TextView? = null
+    private var loginOtpVerifyButton: android.widget.Button? = null
 
     private data class PendingLoginOtp(
         val email: String,
         val remember: Boolean,
         val startedAt: Long
-    )
-
-    private data class VerifiedLoginSession(
-        val token: String,
-        val userJson: String
     )
 
     private data class DownloadInfo(
@@ -227,6 +224,58 @@ class MainActivity : Activity() {
                 @JavascriptInterface
                 fun clearPendingLoginOtp() {
                     clearSavedLoginOtp()
+                }
+
+                @JavascriptInterface
+                fun onLoginOtpVerificationResult(
+                    token: String?,
+                    userJson: String?,
+                    error: String?
+                ) {
+                    runOnUiThread {
+                        val verifyButton = loginOtpVerifyButton
+                        val errorLabel = loginOtpErrorText
+
+                        if (!error.isNullOrBlank() || token.isNullOrBlank()) {
+                            errorLabel?.text = error?.take(300)
+                                ?.ifBlank { null }
+                                ?: "OTP verification failed. Please try again."
+                            errorLabel?.visibility = View.VISIBLE
+                            verifyButton?.isEnabled = true
+                            return@runOnUiThread
+                        }
+
+                        val pending = getPendingLoginOtp()
+                        if (pending == null) {
+                            errorLabel?.text = "Your login verification expired. Please log in again."
+                            errorLabel?.visibility = View.VISIBLE
+                            verifyButton?.isEnabled = true
+                            return@runOnUiThread
+                        }
+
+                        val safeUserJson = userJson?.takeIf { it.isNotBlank() } ?: "{}"
+                        clearSavedLoginOtp()
+
+                        val storage = if (pending.remember) "localStorage" else "sessionStorage"
+                        val otherStorage = if (pending.remember) "sessionStorage" else "localStorage"
+                        val sessionScript = """
+                            (function () {
+                              try {
+                                ${storage}.setItem('examo_token', ${JSONObject.quote(token)});
+                                ${storage}.setItem('examo_user', ${JSONObject.quote(safeUserJson)});
+                                ${otherStorage}.removeItem('examo_token');
+                                ${otherStorage}.removeItem('examo_user');
+                                window.location.reload();
+                              } catch (error) {
+                                console.error('Could not restore the verified Examo session', error);
+                              }
+                            })();
+                        """.trimIndent()
+
+                        webView.evaluateJavascript(sessionScript, null)
+                        pendingLoginOtpDialog?.dismiss()
+                        Toast.makeText(this@MainActivity, "Login verified", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }, "ExamoAuthBridge")
 
@@ -657,9 +706,14 @@ class MainActivity : Activity() {
         dialog.setCanceledOnTouchOutside(false)
         dialog.setOnDismissListener {
             if (pendingLoginOtpDialog === dialog) pendingLoginOtpDialog = null
+            loginOtpErrorText = null
+            loginOtpVerifyButton = null
         }
         dialog.setOnShowListener {
             val verifyButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            loginOtpVerifyButton = verifyButton
+            loginOtpErrorText = errorText
+
             verifyButton.setOnClickListener {
                 val code = otpInput.text?.toString()?.trim().orEmpty()
                 if (!code.matches(Regex("^\\d{6}$"))) {
@@ -670,101 +724,67 @@ class MainActivity : Activity() {
 
                 errorText.visibility = View.GONE
                 verifyButton.isEnabled = false
-                activityScope.launch {
-                    try {
-                        val session = withContext(Dispatchers.IO) {
-                            requestLoginOtpVerification(pending.email, code)
+
+                // Use the WebView's same fetch/CORS/network stack that sent the
+                // original login request. This avoids an empty-body response from
+                // a separate native HttpURLConnection request.
+                val endpoint = "${getString(R.string.examo_api_url).trimEnd('/')}/Auth/verify-login-otp"
+                val script = """
+                    (async function () {
+                      try {
+                        const response = await fetch(${JSONObject.quote(endpoint)}, {
+                          method: 'POST',
+                          headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                          },
+                          body: JSON.stringify({
+                            email: ${JSONObject.quote(pending.email)},
+                            otp: ${JSONObject.quote(code)}
+                          })
+                        });
+
+                        const responseText = await response.text();
+                        let data = {};
+                        if (responseText && responseText.trim()) {
+                          try {
+                            data = JSON.parse(responseText);
+                          } catch (parseError) {
+                            throw new Error('The login server returned an unreadable response (HTTP ' + response.status + ').');
+                          }
+                        } else if (response.ok) {
+                          throw new Error('The login server returned an empty response (HTTP ' + response.status + '). Please retry.');
                         }
-                        clearSavedLoginOtp()
 
-                        val storage = if (pending.remember) "localStorage" else "sessionStorage"
-                        val otherStorage = if (pending.remember) "sessionStorage" else "localStorage"
-                        val script = """
-                            (function () {
-                              try {
-                                ${storage}.setItem('examo_token', ${JSONObject.quote(session.token)});
-                                ${storage}.setItem('examo_user', ${JSONObject.quote(session.userJson)});
-                                ${otherStorage}.removeItem('examo_token');
-                                ${otherStorage}.removeItem('examo_user');
-                                window.location.reload();
-                              } catch (error) {
-                                console.error('Could not restore the verified Examo session', error);
-                              }
-                            })();
-                        """.trimIndent()
+                        if (!response.ok) {
+                          throw new Error(data.message || data.Message || ('OTP verification failed (HTTP ' + response.status + ').'));
+                        }
 
-                        webView.evaluateJavascript(script, null)
-                        dialog.dismiss()
-                        Toast.makeText(this@MainActivity, "Login verified", Toast.LENGTH_SHORT).show()
-                    } catch (error: Exception) {
-                        errorText.text = error.message ?: "Could not verify the code. Please try again."
-                        errorText.visibility = View.VISIBLE
-                        verifyButton.isEnabled = true
-                    }
-                }
+                        const token = data.token || data.Token || data.accessToken || data.AccessToken;
+                        const user = data.user || data.User || {};
+                        if (!token) {
+                          throw new Error('The server did not return a login token. Please contact support.');
+                        }
+
+                        window.ExamoAuthBridge.onLoginOtpVerificationResult(
+                          String(token),
+                          JSON.stringify(user),
+                          ''
+                        );
+                      } catch (error) {
+                        window.ExamoAuthBridge.onLoginOtpVerificationResult(
+                          '',
+                          '',
+                          (error && error.message) || 'Could not verify the code. Please try again.'
+                        );
+                      }
+                    })();
+                """.trimIndent()
+                webView.evaluateJavascript(script, null)
             }
         }
         dialog.show()
         otpInput.requestFocus()
-    }
-
-    private fun requestLoginOtpVerification(
-        email: String,
-        otp: String
-    ): VerifiedLoginSession {
-        val endpoint = "${getString(R.string.examo_api_url).trimEnd('/')}/Auth/verify-login-otp"
-        val connection = (URL(endpoint).openConnection() as HttpURLConnection)
-
-        try {
-            connection.requestMethod = "POST"
-            connection.connectTimeout = 15000
-            connection.readTimeout = 20000
-            connection.doOutput = true
-            connection.setRequestProperty("Accept", "application/json")
-            connection.setRequestProperty("Content-Type", "application/json; charset=utf-8")
-
-            val payload = JSONObject()
-                .put("email", email)
-                .put("otp", otp)
-                .toString()
-                .toByteArray(Charsets.UTF_8)
-
-            connection.outputStream.use { output ->
-                output.write(payload)
-            }
-
-            val status = connection.responseCode
-            val responseText = (if (status in 200..299) {
-                connection.inputStream
-            } else {
-                connection.errorStream
-            })?.bufferedReader()?.use { it.readText() }.orEmpty()
-
-            if (status !in 200..299) {
-                val message = runCatching {
-                    JSONObject(responseText).optString("message")
-                        .ifBlank { JSONObject(responseText).optString("Message") }
-                }.getOrDefault("")
-                throw IOException(
-                    message.ifBlank { "OTP verification failed (HTTP ${status})." }
-                )
-            }
-
-            val response = JSONObject(responseText)
-            val token = response.optString("token")
-                .ifBlank { response.optString("Token") }
-            val user = response.optJSONObject("user")
-                ?: response.optJSONObject("User")
-                ?: JSONObject()
-
-            if (token.isBlank()) {
-                throw IOException("The server did not return a login token.")
-            }
-
-            return VerifiedLoginSession(token, user.toString())
-        } finally {
-            connection.disconnect()
-        }
     }
 
     private fun openExternal(uri: Uri): Boolean {
