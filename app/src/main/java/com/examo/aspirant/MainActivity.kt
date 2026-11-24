@@ -279,6 +279,17 @@ class MainActivity : Activity() {
                   var grip = document.createElement('div');
                   grip.style.cssText = 'position:absolute;left:14px;right:14px;top:10px;height:6px;background:#2455ad;border-radius:999px;box-shadow:0 2px 4px rgba(20,50,110,.22);pointer-events:none';
                   bar.appendChild(grip);
+                  var downCue = document.createElement('div');
+                  downCue.textContent = '↓';
+                  downCue.setAttribute('aria-hidden', 'true');
+                  downCue.style.cssText = 'position:absolute;left:50%;top:17px;transform:translateX(-50%);font:700 18px/20px Arial,sans-serif;color:#2455ad;text-shadow:0 1px 2px rgba(20,50,110,.16);pointer-events:none;animation:examoSwipeDown 1.05s ease-in-out infinite';
+                  bar.appendChild(downCue);
+                  if (!document.getElementById('examo-swipe-down-style')) {
+                    var cueStyle = document.createElement('style');
+                    cueStyle.id = 'examo-swipe-down-style';
+                    cueStyle.textContent = '@keyframes examoSwipeDown{0%,100%{transform:translate(-50%,0);opacity:.68}50%{transform:translate(-50%,4px);opacity:1}}';
+                    document.head.appendChild(cueStyle);
+                  }
                   shell.appendChild(bar);
                 }
                 var brand = shell.querySelector('.ex-mobile-brand');
