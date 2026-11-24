@@ -558,6 +558,14 @@ class MainActivity : Activity() {
         ) return
 
         val pending = getPendingLoginOtp() ?: return
+
+        // The welcome sheet is the default after Activity recreation. Bring the
+        // auth WebView back into view so a restored OTP page is immediately usable.
+        webView.animate().cancel()
+        webView.visibility = View.VISIBLE
+        webView.translationY = 0f
+        authSheetOpen = true
+
         val otpPageCheck = """
             (function () {
               return Array.from(document.querySelectorAll('form.ex-form h2')).some(function (node) {
