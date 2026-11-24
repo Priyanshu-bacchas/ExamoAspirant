@@ -621,9 +621,27 @@ class MainActivity : Activity() {
         """.trimIndent()
 
         view.evaluateJavascript(otpPageCheck) { result ->
-            // If the real React OTP form or our recovered form is still present,
-            // do not touch it: the user's current screen and typed code stay intact.
-            if (result == "true") return@evaluateJavascript
+            // Keep the original React OTP screen and its input untouched.
+            // Hide only the escape link so the pending login cannot be abandoned
+            // accidentally while the user switches to Gmail to read the code.
+            if (result == "true") {
+                val lockScript = """
+                    (function () {
+                      var otpHeading = Array.from(document.querySelectorAll('form.ex-form h2'))
+                        .find(function (node) {
+                          return (node.textContent || '').trim().toLowerCase() === 'confirm your login';
+                        });
+                      var otpForm = otpHeading && otpHeading.closest('form');
+                      var actions = otpForm && otpForm.querySelector('.ex-otp-actions');
+                      if (actions) {
+                        var buttons = actions.querySelectorAll('button');
+                        if (buttons.length > 1) buttons[buttons.length - 1].style.display = 'none';
+                      }
+                    })();
+                """.trimIndent()
+                view.evaluateJavascript(lockScript, null)
+                return@evaluateJavascript
+            }
 
             val latest = getPendingLoginOtp() ?: return@evaluateJavascript
             if (latest.email.equals(pending.email, ignoreCase = true)) {
