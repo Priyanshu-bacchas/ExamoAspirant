@@ -240,7 +240,7 @@ private class StudentOrbitView(context: Context) : View(context) {
         val cy=height*.53f
         // Slightly enlarge the complete avatar/orbit group while keeping the
         // outer tiles inside the full-width viewport on common phone sizes.
-        val scale=minOf(width.toFloat()/385f,height.toFloat()/412f).coerceIn(.55f,1.22f)
+        val scale=minOf(width.toFloat()/375f,height.toFloat()/402f).coerceIn(.55f,1.27f)
         // Soft orbit rings and ambient dots
         p.style=Paint.Style.STROKE; p.strokeWidth=1.3f*scale; p.color=Color.rgb(188,211,247)
         canvas.drawCircle(cx,cy,166f*scale,p)
