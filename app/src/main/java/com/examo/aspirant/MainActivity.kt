@@ -476,6 +476,32 @@ class MainActivity : Activity() {
               if (window.__examoLoginOtpRecoveryInstalled) return;
               window.__examoLoginOtpRecoveryInstalled = true;
 
+              // Capture the backend's OTP-required response directly. This is
+              // more reliable than waiting for React to render the OTP heading.
+              if (!window.__examoLoginOtpFetchWrapped) {
+                window.__examoLoginOtpFetchWrapped = true;
+                var originalFetch = window.fetch.bind(window);
+                window.fetch = function (input, init) {
+                  var requestUrl = typeof input === 'string' ? input :
+                    (input && input.url) || '';
+                  var isLoginRequest = String(requestUrl).toLowerCase().indexOf('/auth/login') !== -1;
+                  var rememberInput = document.querySelector('form.ex-form input[type="checkbox"]');
+                  var remember = rememberInput ? !!rememberInput.checked : true;
+
+                  return originalFetch(input, init).then(function (response) {
+                    if (isLoginRequest && response.status === 403) {
+                      response.clone().json().then(function (data) {
+                        if (data && data.code === 'LOGIN_OTP_REQUIRED' &&
+                            data.email && window.ExamoAuthBridge) {
+                          window.ExamoAuthBridge.savePendingLoginOtp(data.email, remember);
+                        }
+                      }).catch(function () {});
+                    }
+                    return response;
+                  });
+                };
+              }
+
               function inspectLoginOtp() {
                 try {
                   var heading = Array.from(document.querySelectorAll('form.ex-form h2'))
