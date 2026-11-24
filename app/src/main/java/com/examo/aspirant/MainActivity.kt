@@ -215,11 +215,13 @@ class MainActivity : Activity() {
                         System.currentTimeMillis()
                     }
 
+                    // Commit synchronously: Android may kill the background
+                    // Activity while Gmail is in the foreground.
                     authRecoveryPrefs.edit()
                         .putString("login_otp_email", normalizedEmail)
                         .putBoolean("login_otp_remember", remember)
                         .putLong("login_otp_started_at", startedAt)
-                        .apply()
+                        .commit()
                 }
 
                 @JavascriptInterface
@@ -1782,7 +1784,25 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
-        if (::webView.isInitialized) webView.onResume()
+        if (::webView.isInitialized) {
+            webView.onResume()
+
+            // WebView.restoreState() does not guarantee a fresh onPageFinished
+            // callback. Re-check the saved OTP step whenever Gmail returns focus.
+            if (getPendingLoginOtp() != null) {
+                val retryDelays = longArrayOf(350L, 1000L, 2200L)
+                retryDelays.forEach { delay ->
+                    webView.postDelayed({
+                        if (!isFinishing && !isDestroyed &&
+                            pendingLoginOtpDialog?.isShowing != true &&
+                            getPendingLoginOtp() != null
+                        ) {
+                            restorePendingLoginOtpIfNeeded(webView, webView.url)
+                        }
+                    }, delay)
+                }
+            }
+        }
     }
 
     override fun onPause() {
