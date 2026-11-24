@@ -2,6 +2,14 @@ package com.examo.aspirant
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.AlertDialog
+import android.text.InputFilter
+import android.text.InputType
+import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.TextView
+import org.json.JSONObject
+import java.io.IOException
 import android.app.DownloadManager
 import android.Manifest
 import android.content.pm.PackageManager
@@ -46,6 +54,25 @@ class MainActivity : Activity() {
     private var customViewCallback: WebChromeClient.CustomViewCallback? = null
     private var originalSystemUiVisibility: Int = 0
     private var pendingDownload: DownloadInfo? = null
+
+    // Recover the login OTP step if Android recreates the WebView while Gmail is open.
+    // Only the destination email, remember preference and creation time are stored;
+    // passwords and OTP values are never persisted.
+    private val authRecoveryPrefs by lazy {
+        getSharedPreferences("examo_auth_recovery", MODE_PRIVATE)
+    }
+    private var pendingLoginOtpDialog: AlertDialog? = null
+
+    private data class PendingLoginOtp(
+        val email: String,
+        val remember: Boolean,
+        val startedAt: Long
+    )
+
+    private data class VerifiedLoginSession(
+        val token: String,
+        val userJson: String
+    )
 
     private data class DownloadInfo(
         val url: String,
@@ -174,6 +201,33 @@ class MainActivity : Activity() {
                 }
             }, "ExamoSwipeBridge")
 
+            addJavascriptInterface(object {
+                @JavascriptInterface
+                fun savePendingLoginOtp(email: String?, remember: Boolean) {
+                    val normalizedEmail = email?.trim()?.lowercase().orEmpty()
+                    if (normalizedEmail.isBlank() || !normalizedEmail.contains("@")) return
+
+                    val oldEmail = authRecoveryPrefs.getString("login_otp_email", null)
+                    val oldStartedAt = authRecoveryPrefs.getLong("login_otp_started_at", 0L)
+                    val startedAt = if (oldEmail == normalizedEmail && oldStartedAt > 0L) {
+                        oldStartedAt
+                    } else {
+                        System.currentTimeMillis()
+                    }
+
+                    authRecoveryPrefs.edit()
+                        .putString("login_otp_email", normalizedEmail)
+                        .putBoolean("login_otp_remember", remember)
+                        .putLong("login_otp_started_at", startedAt)
+                        .apply()
+                }
+
+                @JavascriptInterface
+                fun clearPendingLoginOtp() {
+                    clearSavedLoginOtp()
+                }
+            }, "ExamoAuthBridge")
+
             webViewClient = object : WebViewClient() {
                 override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                     val uri = request?.url ?: return false
@@ -191,6 +245,8 @@ class MainActivity : Activity() {
                     installMobileNavigationFix(view)
                     hideGoogleSignInInApp(view)
                     installLoginSwipeBorder(view)
+                    installLoginOtpRecovery(view)
+                    restorePendingLoginOtpIfNeeded(view, url)
                 }
             }
 
@@ -408,6 +464,270 @@ class MainActivity : Activity() {
                 }
             }
             webChromeClient = WebChromeClient()
+        }
+    }
+
+
+    private fun installLoginOtpRecovery(view: WebView?) {
+        val script = """
+            (function () {
+              if (window.__examoLoginOtpRecoveryInstalled) return;
+              window.__examoLoginOtpRecoveryInstalled = true;
+
+              function inspectLoginOtp() {
+                try {
+                  var heading = Array.from(document.querySelectorAll('form.ex-form h2'))
+                    .find(function (node) {
+                      return (node.textContent || '').trim().toLowerCase() === 'confirm your login';
+                    });
+
+                  if (heading) {
+                    var form = heading.closest('form');
+                    var emailNode = form && form.querySelector('.ex-sub b');
+                    var email = emailNode ? (emailNode.textContent || '').trim() : '';
+                    var rememberInput = document.querySelector('form.ex-form input[type="checkbox"]');
+                    var remember = rememberInput ? !!rememberInput.checked : true;
+
+                    if (email && window.ExamoAuthBridge) {
+                      window.ExamoAuthBridge.savePendingLoginOtp(email, remember);
+                    }
+                    return;
+                  }
+
+                  var token = localStorage.getItem('examo_token') ||
+                    sessionStorage.getItem('examo_token');
+                  if (token && window.ExamoAuthBridge) {
+                    window.ExamoAuthBridge.clearPendingLoginOtp();
+                  }
+                } catch (error) {
+                  // A storage or DOM timing issue must not interrupt the login page.
+                }
+              }
+
+              inspectLoginOtp();
+              if (window.__examoLoginOtpRecoveryObserver) {
+                window.__examoLoginOtpRecoveryObserver.disconnect();
+              }
+              window.__examoLoginOtpRecoveryObserver = new MutationObserver(inspectLoginOtp);
+              window.__examoLoginOtpRecoveryObserver.observe(document.documentElement, {
+                childList: true,
+                subtree: true,
+                characterData: true
+              });
+            })();
+        """.trimIndent()
+        view?.evaluateJavascript(script, null)
+    }
+
+    private fun getPendingLoginOtp(): PendingLoginOtp? {
+        val email = authRecoveryPrefs.getString("login_otp_email", null)
+            ?.trim()
+            .orEmpty()
+        val startedAt = authRecoveryPrefs.getLong("login_otp_started_at", 0L)
+
+        if (email.isBlank() || startedAt <= 0L ||
+            System.currentTimeMillis() - startedAt > 10 * 60 * 1000L
+        ) {
+            clearSavedLoginOtp()
+            return null
+        }
+
+        return PendingLoginOtp(
+            email = email,
+            remember = authRecoveryPrefs.getBoolean("login_otp_remember", true),
+            startedAt = startedAt
+        )
+    }
+
+    private fun clearSavedLoginOtp() {
+        authRecoveryPrefs.edit()
+            .remove("login_otp_email")
+            .remove("login_otp_remember")
+            .remove("login_otp_started_at")
+            .apply()
+    }
+
+    private fun isExamoWebsiteUrl(url: String?): Boolean {
+        val host = runCatching { Uri.parse(url).host?.lowercase() }.getOrNull()
+        return host == "examoaspirants.co.in" || host == "www.examoaspirants.co.in"
+    }
+
+    private fun restorePendingLoginOtpIfNeeded(view: WebView?, url: String?) {
+        if (view == null || !isExamoWebsiteUrl(url) ||
+            pendingLoginOtpDialog?.isShowing == true
+        ) return
+
+        val pending = getPendingLoginOtp() ?: return
+        val otpPageCheck = """
+            (function () {
+              return Array.from(document.querySelectorAll('form.ex-form h2')).some(function (node) {
+                return (node.textContent || '').trim().toLowerCase() === 'confirm your login';
+              });
+            })();
+        """.trimIndent()
+
+        view.evaluateJavascript(otpPageCheck) { result ->
+            // If WebView restored the real OTP screen, leave its original UI untouched.
+            if (result == "true") return@evaluateJavascript
+
+            val latest = getPendingLoginOtp() ?: return@evaluateJavascript
+            if (latest.email == pending.email && pendingLoginOtpDialog?.isShowing != true) {
+                showPendingLoginOtpDialog(latest)
+            }
+        }
+    }
+
+    private fun showPendingLoginOtpDialog(pending: PendingLoginOtp) {
+        if (isFinishing || isDestroyed || pendingLoginOtpDialog?.isShowing == true) return
+
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(22), dp(8), dp(22), dp(4))
+        }
+        val message = TextView(this).apply {
+            text = "A login code was already sent to ${pending.email}. Enter that code to continue. This step was restored after returning to Examo."
+            textSize = 14f
+        }
+        val otpInput = EditText(this).apply {
+            hint = "Enter 6-digit OTP"
+            inputType = InputType.TYPE_CLASS_NUMBER
+            filters = arrayOf(InputFilter.LengthFilter(6))
+            maxLines = 1
+        }
+        val errorText = TextView(this).apply {
+            setTextColor(Color.rgb(185, 28, 28))
+            textSize = 13f
+            visibility = View.GONE
+        }
+        content.addView(message)
+        content.addView(otpInput, LinearLayout.LayoutParams(-1, -2).apply {
+            topMargin = dp(12)
+        })
+        content.addView(errorText, LinearLayout.LayoutParams(-1, -2).apply {
+            topMargin = dp(6)
+        })
+
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("Continue your login")
+            .setView(content)
+            .setNegativeButton("Cancel") { _, _ ->
+                clearSavedLoginOtp()
+            }
+            .setPositiveButton("Verify", null)
+            .create()
+
+        pendingLoginOtpDialog = dialog
+        dialog.setCancelable(false)
+        dialog.setCanceledOnTouchOutside(false)
+        dialog.setOnDismissListener {
+            if (pendingLoginOtpDialog === dialog) pendingLoginOtpDialog = null
+        }
+        dialog.setOnShowListener {
+            val verifyButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            verifyButton.setOnClickListener {
+                val code = otpInput.text?.toString()?.trim().orEmpty()
+                if (!code.matches(Regex("^\\d{6}$"))) {
+                    errorText.text = "Enter the 6-digit code."
+                    errorText.visibility = View.VISIBLE
+                    return@setOnClickListener
+                }
+
+                errorText.visibility = View.GONE
+                verifyButton.isEnabled = false
+                activityScope.launch {
+                    try {
+                        val session = withContext(Dispatchers.IO) {
+                            requestLoginOtpVerification(pending.email, code)
+                        }
+                        clearSavedLoginOtp()
+
+                        val storage = if (pending.remember) "localStorage" else "sessionStorage"
+                        val otherStorage = if (pending.remember) "sessionStorage" else "localStorage"
+                        val script = """
+                            (function () {
+                              try {
+                                ${storage}.setItem('examo_token', ${JSONObject.quote(session.token)});
+                                ${storage}.setItem('examo_user', ${JSONObject.quote(session.userJson)});
+                                ${otherStorage}.removeItem('examo_token');
+                                ${otherStorage}.removeItem('examo_user');
+                                window.location.reload();
+                              } catch (error) {
+                                console.error('Could not restore the verified Examo session', error);
+                              }
+                            })();
+                        """.trimIndent()
+
+                        webView.evaluateJavascript(script, null)
+                        dialog.dismiss()
+                        Toast.makeText(this@MainActivity, "Login verified", Toast.LENGTH_SHORT).show()
+                    } catch (error: Exception) {
+                        errorText.text = error.message ?: "Could not verify the code. Please try again."
+                        errorText.visibility = View.VISIBLE
+                        verifyButton.isEnabled = true
+                    }
+                }
+            }
+        }
+        dialog.show()
+        otpInput.requestFocus()
+    }
+
+    private fun requestLoginOtpVerification(
+        email: String,
+        otp: String
+    ): VerifiedLoginSession {
+        val endpoint = "${getString(R.string.examo_api_url).trimEnd('/')}/Auth/verify-login-otp"
+        val connection = (URL(endpoint).openConnection() as HttpURLConnection)
+
+        try {
+            connection.requestMethod = "POST"
+            connection.connectTimeout = 15000
+            connection.readTimeout = 20000
+            connection.doOutput = true
+            connection.setRequestProperty("Accept", "application/json")
+            connection.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+
+            val payload = JSONObject()
+                .put("email", email)
+                .put("otp", otp)
+                .toString()
+                .toByteArray(Charsets.UTF_8)
+
+            connection.outputStream.use { output ->
+                output.write(payload)
+            }
+
+            val status = connection.responseCode
+            val responseText = (if (status in 200..299) {
+                connection.inputStream
+            } else {
+                connection.errorStream
+            })?.bufferedReader()?.use { it.readText() }.orEmpty()
+
+            if (status !in 200..299) {
+                val message = runCatching {
+                    JSONObject(responseText).optString("message")
+                        .ifBlank { JSONObject(responseText).optString("Message") }
+                }.getOrDefault("")
+                throw IOException(
+                    message.ifBlank { "OTP verification failed (HTTP ${status})." }
+                )
+            }
+
+            val response = JSONObject(responseText)
+            val token = response.optString("token")
+                .ifBlank { response.optString("Token") }
+            val user = response.optJSONObject("user")
+                ?: response.optJSONObject("User")
+                ?: JSONObject()
+
+            if (token.isBlank()) {
+                throw IOException("The server did not return a login token.")
+            }
+
+            return VerifiedLoginSession(token, user.toString())
+        } finally {
+            connection.disconnect()
         }
     }
 
@@ -1466,6 +1786,8 @@ class MainActivity : Activity() {
         fileChooserCallback?.onReceiveValue(null)
         fileChooserCallback = null
         if (customView != null) hideCustomView()
+        pendingLoginOtpDialog?.dismiss()
+        pendingLoginOtpDialog = null
         activityScope.cancel()
         popupWebView?.destroy()
         if (::webView.isInitialized) webView.destroy()
