@@ -63,6 +63,11 @@ class MainActivity : Activity() {
         val startedAt: Long
     )
 
+    private data class VerifiedLoginSession(
+        val token: String,
+        val userJson: String
+    )
+
     private data class DownloadInfo(
         val url: String,
         val userAgent: String?,
@@ -762,7 +767,7 @@ class MainActivity : Activity() {
 
               window.setTimeout(function () { input.focus(); }, 120);
             })();
-        """.trimIndent().replace("EMAIL_JSON_PLACEHOLDER", ${emailJson})
+        """.trimIndent().replace("EMAIL_JSON_PLACEHOLDER", emailJson)
         view.evaluateJavascript(script, null)
     }
 
