@@ -705,7 +705,7 @@ class MainActivity : Activity() {
               var restart = document.getElementById('examo-otp-restart');
 
               input.addEventListener('input', function () {
-                input.value = input.value.replace(/\\D/g, '').slice(0, 6);
+                input.value = input.value.replace(/\D/g, '').slice(0, 6);
               });
 
               form.addEventListener('submit', function (event) {
@@ -744,7 +744,7 @@ class MainActivity : Activity() {
 
               window.setTimeout(function () { input.focus(); }, 120);
             })();
-        """.trimIndent().replace("EMAIL_JSON_PLACEHOLDER", \${emailJson})
+        """.trimIndent().replace("EMAIL_JSON_PLACEHOLDER", ${emailJson})
         view.evaluateJavascript(script, null)
     }
 
@@ -758,10 +758,10 @@ class MainActivity : Activity() {
             (function () {
               if (window.showExamoOtpStatus) {
                 window.showExamoOtpStatus(
-                  \${JSONObject.quote(message)},
-                  \${isError},
-                  \${expired},
-                  \${busy}
+                  ${JSONObject.quote(message)},
+                  ${isError},
+                  ${expired},
+                  ${busy}
                 );
               }
             })();
@@ -823,10 +823,10 @@ class MainActivity : Activity() {
                 val script = """
                     (function () {
                       try {
-                        \${storage}.setItem('examo_token', \${JSONObject.quote(session.token)});
-                        \${storage}.setItem('examo_user', \${JSONObject.quote(session.userJson)});
-                        \${otherStorage}.removeItem('examo_token');
-                        \${otherStorage}.removeItem('examo_user');
+                        ${storage}.setItem('examo_token', ${JSONObject.quote(session.token)});
+                        ${storage}.setItem('examo_user', ${JSONObject.quote(session.userJson)});
+                        ${otherStorage}.removeItem('examo_token');
+                        ${otherStorage}.removeItem('examo_user');
                         window.location.reload();
                       } catch (error) {
                         if (window.showExamoOtpStatus) {
@@ -853,7 +853,7 @@ class MainActivity : Activity() {
     }
 
     private fun requestLoginOtpVerification(email: String, otp: String): VerifiedLoginSession {
-        val endpoint = "\${getString(R.string.examo_api_url).trimEnd('/')}/Auth/verify-login-otp"
+        val endpoint = "${getString(R.string.examo_api_url).trimEnd('/')}/Auth/verify-login-otp"
         val connection = URL(endpoint).openConnection() as HttpURLConnection
 
         try {
@@ -895,7 +895,7 @@ class MainActivity : Activity() {
 
             if (responseText.isBlank()) {
                 throw IOException(
-                    "Examo server returned an empty response (HTTP \${status}). Check your internet and try again."
+                    "Examo server returned an empty response (HTTP ${status}). Check your internet and try again."
                 )
             }
 
@@ -904,7 +904,7 @@ class MainActivity : Activity() {
             } catch (_: Exception) {
                 val preview = responseText.take(160)
                 throw IOException(
-                    "Examo server returned an invalid response (HTTP \${status}): $preview"
+                    "Examo server returned an invalid response (HTTP ${status}): $preview"
                 )
             }
 
@@ -913,7 +913,7 @@ class MainActivity : Activity() {
                     .ifBlank { response.optString("Message") }
                     .ifBlank { response.optString("title") }
                     .ifBlank { response.optString("Title") }
-                    .ifBlank { "OTP verification failed (HTTP \${status})." }
+                    .ifBlank { "OTP verification failed (HTTP ${status})." }
                 throw IOException(message)
             }
 
