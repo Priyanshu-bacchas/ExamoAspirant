@@ -531,8 +531,14 @@ class MainActivity : Activity() {
                 'body.examo-android-help-mode .topbar .breadcrumb strong{font-size:14px!important}',
                 '#examo-android-help-redesign{width:100%;max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:14px;color:#14213c;font-family:inherit}',
                 '#examo-android-help-redesign *{box-sizing:border-box}',
-                '.eah-hero{display:block;width:100%;height:auto;min-height:0;overflow:hidden;border-radius:19px;border:1px solid #d8e4fb;background:transparent!important;box-shadow:0 7px 16px rgba(33,75,141,.09);line-height:0;padding:0!important}',
-                '.eah-hero-canvas{display:block;width:100%;height:auto;max-width:100%;margin:0;padding:0;border:0;background:transparent}',
+                '.eah-hero{position:relative;display:block;width:100%;height:auto;min-height:0;overflow:hidden;border-radius:19px;border:1px solid #d8e4fb;background:transparent!important;box-shadow:0 7px 16px rgba(33,75,141,.09);line-height:0;padding:0!important}',
+                '.eah-hero-canvas{position:relative;z-index:0;display:block;width:100%;height:auto;max-width:100%;margin:0;padding:0;border:0;background:transparent}',
+                '.eah-hero:after{content:"";position:absolute;z-index:1;left:0;top:0;bottom:0;width:73%;pointer-events:none;background:linear-gradient(90deg,rgba(224,235,255,.99) 0%,rgba(229,234,255,.98) 66%,rgba(231,231,255,.92) 82%,rgba(231,231,255,0) 100%)}',
+                '.eah-hero-copy{position:absolute;z-index:2;left:4.5%;top:13%;width:59%;height:78%;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;pointer-events:none}',
+                '.eah-hero-kicker{margin:0 0 3px;color:#075bd8;font-size:clamp(17px,5.4vw,23px);font-weight:900;font-style:italic;line-height:1.06;letter-spacing:-.035em;text-shadow:0 0 0 #075bd8}',
+                '.eah-hero-headline{margin:0;color:#101b36;font-size:clamp(14px,4.3vw,19px);font-weight:900;font-style:italic;line-height:1.1;letter-spacing:-.04em;white-space:nowrap;text-shadow:0 0 0 #101b36}',
+                '.eah-hero-headline em{color:#075bd8;font-style:italic}',
+                '.eah-hero-description{margin:7px 0 0;color:#162745;font-size:clamp(8px,2.75vw,11px);font-weight:650;line-height:1.32;letter-spacing:-.01em;text-shadow:0 0 0 #162745;max-width:100%}',
                 '.eah-hero-fallback{min-height:148px;background:linear-gradient(110deg,#dceaff 0%,#e3e7ff 60%,#eee6ff 100%)!important;display:flex;align-items:center;padding:20px 17px;line-height:normal}',
                 '.eah-hero-fallback-content{max-width:78%;color:#12264a}',
                 '.eah-hero-fallback-content small{display:block;color:#1762cf;font-size:12px;font-weight:850;letter-spacing:.08em;margin-bottom:7px}',
@@ -607,7 +613,7 @@ class MainActivity : Activity() {
 
               function makeMarkup() {
                 return [
-                  '<section class="eah-hero" role="img" aria-label="Need Help? We are here for you."><canvas class="eah-hero-canvas" width="382" height="116"></canvas></section>',
+                  '<section class="eah-hero" role="img" aria-label="Need Help? We are here for you."><canvas class="eah-hero-canvas" width="382" height="116"></canvas><div class="eah-hero-copy"><div class="eah-hero-kicker">Need Help?</div><div class="eah-hero-headline">We’re Here for <em>You!</em></div><p class="eah-hero-description">Get quick answers, step-by-step guides<br>or contact our support team.</p></div></section>',
                   '<div class="eah-section-title">Quick Help</div>',
                   '<section class="eah-categories" aria-label="Help categories">',
                     '<button type="button" class="eah-category eah-user" data-category="User Guide"><span class="eah-category-icon"><svg viewBox="0 0 24 24"><path d="M3 5.5c3.2-1.4 6.2-.9 9 1.2v14c-2.8-2.1-5.8-2.6-9-1.2z"/><path d="M21 5.5c-3.2-1.4-6.2-.9-9 1.2v14c2.8-2.1 5.8-2.6 9-1.2z"/><path d="M6 9h3M6 12h3M15 9h3M15 12h3"/></svg></span><strong>User Guide</strong><small>Learn how to use Examo</small></button>',
