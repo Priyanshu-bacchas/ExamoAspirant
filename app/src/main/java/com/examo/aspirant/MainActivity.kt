@@ -985,7 +985,6 @@ class MainActivity : Activity() {
             setHintTextColor(Color.rgb(148, 163, 184))
             setPadding(dp(14), dp(14), dp(14), dp(14))
             background = rounded(Color.rgb(244, 247, 252), 10, Color.rgb(211, 219, 232))
-            setAutofillHints(View.AUTOFILL_HINT_SMS_OTP)
         }
 
         val status = TextView(this).apply {
@@ -1033,7 +1032,7 @@ class MainActivity : Activity() {
         card.addView(restart, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
 
         center.addView(card, LinearLayout.LayoutParams(-1, -2))
-        scroll.addView(center, ScrollView.LayoutParams(-1, -1))
+        scroll.addView(center, FrameLayout.LayoutParams(-1, -1))
         overlay.addView(scroll, FrameLayout.LayoutParams(-1, -1))
 
         pendingOtpOverlay = overlay
