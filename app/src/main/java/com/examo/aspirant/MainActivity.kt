@@ -64,11 +64,6 @@ class MainActivity : Activity() {
         val apiBaseUrl: String
     )
 
-    private data class VerifiedLoginSession(
-        val token: String,
-        val userJson: String
-    )
-
     private data class DownloadInfo(
         val url: String,
         val userAgent: String?,
@@ -106,11 +101,19 @@ class MainActivity : Activity() {
             webView.translationY = root.height.toFloat()
         }
 
+        val pendingAtLaunch = getPendingLoginOtp()
+        val savedExamoUrl = authRecoveryPrefs.getString("last_examo_url", null)
+        val launchUrl = if (pendingAtLaunch != null && isExamoWebsiteUrl(savedExamoUrl)) {
+            savedExamoUrl!!
+        } else {
+            getString(R.string.examo_website_url)
+        }
+
         if (savedInstanceState == null) {
-            webView.loadUrl(getString(R.string.examo_website_url))
+            webView.loadUrl(launchUrl)
         } else {
             val restored = webView.restoreState(savedInstanceState)
-            if (restored == null) webView.loadUrl(getString(R.string.examo_website_url))
+            if (restored == null) webView.loadUrl(launchUrl)
         }
 
         var swipeStartY = 0f
@@ -258,6 +261,60 @@ class MainActivity : Activity() {
                 }
 
                 @JavascriptInterface
+                fun completePendingLoginOtp(token: String?, userJson: String?) {
+                    runOnUiThread {
+                        val pending = getPendingLoginOtp()
+                        if (pending == null || token.isNullOrBlank()) {
+                            loginOtpVerificationInProgress = false
+                            setOtpRecoveryStatus(
+                                "Login verification expired or the server did not return a token. Please retry.",
+                                isError = true,
+                                expired = pending == null
+                            )
+                            return@runOnUiThread
+                        }
+
+                        val safeUser = userJson?.takeIf { it.isNotBlank() } ?: "{}"
+                        val storage = if (pending.remember) "localStorage" else "sessionStorage"
+                        val otherStorage = if (pending.remember) "sessionStorage" else "localStorage"
+                        val sessionScript = """
+                            (function () {
+                              try {
+                                ${storage}.setItem('examo_token', ${JSONObject.quote(token)});
+                                ${storage}.setItem('examo_user', ${JSONObject.quote(safeUser)});
+                                ${otherStorage}.removeItem('examo_token');
+                                ${otherStorage}.removeItem('examo_user');
+                                window.location.reload();
+                              } catch (error) {
+                                if (window.showExamoOtpStatus) {
+                                  window.showExamoOtpStatus(
+                                    'Could not save your login session. Please try again.',
+                                    true, false, false
+                                  );
+                                }
+                              }
+                            })();
+                        """.trimIndent()
+                        clearSavedLoginOtp()
+                        loginOtpVerificationInProgress = false
+                        webView.evaluateJavascript(sessionScript, null)
+                    }
+                }
+
+                @JavascriptInterface
+                fun failPendingLoginOtp(message: String?, expired: Boolean) {
+                    runOnUiThread {
+                        loginOtpVerificationInProgress = false
+                        setOtpRecoveryStatus(
+                            message?.take(300)?.ifBlank { null }
+                                ?: "Could not verify your code. Please try again.",
+                            isError = true,
+                            expired = expired
+                        )
+                    }
+                }
+
+                @JavascriptInterface
                 fun restartPendingLogin() {
                     runOnUiThread {
                         clearSavedLoginOtp()
@@ -285,11 +342,29 @@ class MainActivity : Activity() {
 
                 override fun onPageFinished(view: WebView?, url: String?) {
                     super.onPageFinished(view, url)
+                    persistLastExamoUrl(url)
                     installMobileNavigationFix(view)
                     hideGoogleSignInInApp(view)
                     installLoginSwipeBorder(view)
                     installLoginOtpRecovery(view)
                     restorePendingLoginOtpIfNeeded(view, url)
+                }
+
+                override fun onRenderProcessGone(
+                    view: WebView?,
+                    detail: android.webkit.RenderProcessGoneDetail?
+                ): Boolean {
+                    if (view == null) return true
+                    if (view == webView) {
+                        runOnUiThread { recreateMainWebViewAfterRendererGone(view) }
+                    } else {
+                        runOnUiThread {
+                            root.removeView(view)
+                            view.destroy()
+                            if (popupWebView === view) popupWebView = null
+                        }
+                    }
+                    return true
                 }
             }
 
@@ -655,6 +730,53 @@ class MainActivity : Activity() {
         return host == "examoaspirants.co.in" || host == "www.examoaspirants.co.in"
     }
 
+    private fun persistLastExamoUrl(url: String?) {
+        if (!isExamoWebsiteUrl(url)) return
+
+        val safeUrl = if (getPendingLoginOtp() != null) {
+            getString(R.string.examo_website_url)
+        } else {
+            runCatching {
+                Uri.parse(url!!).buildUpon().clearQuery().fragment(null).build().toString()
+            }.getOrDefault(getString(R.string.examo_website_url))
+        }
+
+        authRecoveryPrefs.edit()
+            .putString("last_examo_url", safeUrl)
+            .apply()
+    }
+
+    private fun recreateMainWebViewAfterRendererGone(crashedView: WebView) {
+        if (isFinishing || isDestroyed || !::root.isInitialized) return
+
+        val pending = getPendingLoginOtp()
+        val childIndex = root.indexOfChild(crashedView).coerceAtLeast(0)
+        val layoutParams = crashedView.layoutParams
+            ?: FrameLayout.LayoutParams(-1, -1)
+
+        runCatching { root.removeView(crashedView) }
+        runCatching { crashedView.destroy() }
+
+        val replacement = createWebView()
+        webView = replacement
+        root.addView(replacement, childIndex, layoutParams)
+
+        val shouldShowAuth = pending != null || authSheetOpen
+        replacement.visibility = if (shouldShowAuth) View.VISIBLE else View.INVISIBLE
+        replacement.translationY = if (shouldShowAuth) 0f else root.height.toFloat()
+        if (pending != null) authSheetOpen = true
+
+        val savedUrl = authRecoveryPrefs.getString("last_examo_url", null)
+        val targetUrl = if (pending != null) {
+            getString(R.string.examo_website_url)
+        } else if (isExamoWebsiteUrl(savedUrl)) {
+            savedUrl!!
+        } else {
+            getString(R.string.examo_website_url)
+        }
+        replacement.loadUrl(targetUrl)
+    }
+
 
     private fun restorePendingLoginOtpIfNeeded(view: WebView?, url: String?) {
         if (view == null || !isExamoWebsiteUrl(url)) return
@@ -843,6 +965,7 @@ class MainActivity : Activity() {
         if (::webView.isInitialized) webView.evaluateJavascript(script, null)
     }
 
+
     private fun handlePendingLoginOtpVerification(email: String?, otp: String?) {
         if (loginOtpVerificationInProgress) return
 
@@ -879,162 +1002,74 @@ class MainActivity : Activity() {
             busy = true
         )
 
-        activityScope.launch {
-            try {
-                val webViewUserAgent = webView.settings.userAgentString
-                val session = withContext(Dispatchers.IO) {
-                    requestLoginOtpVerification(
-                        pending.email,
-                        code,
-                        pending.apiBaseUrl,
-                        webViewUserAgent
-                    )
+        // Use the same browser fetch stack, API origin and CORS path used by
+        // Auth.jsx for normal login. This avoids the empty native HTTP 200 body.
+        val endpointJson = JSONObject.quote(
+            "\${pending.apiBaseUrl.trimEnd('/')}/Auth/verify-login-otp"
+        )
+        val emailJson = JSONObject.quote(pending.email)
+        val otpJson = JSONObject.quote(code)
+        val script = """
+            (async function () {
+              try {
+                const response = await fetch(\${endpointJson}, {
+                  method: 'POST',
+                  headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({
+                    email: \${emailJson},
+                    otp: \${otpJson}
+                  })
+                });
+
+                const responseText = await response.text();
+                let data = {};
+                if (responseText && responseText.trim()) {
+                  try {
+                    data = JSON.parse(responseText);
+                  } catch (parseError) {
+                    throw new Error('The login server returned an unreadable response (HTTP ' + response.status + ').');
+                  }
+                } else if (response.ok) {
+                  throw new Error('The login server returned an empty response (HTTP ' + response.status + '). Please retry.');
                 }
 
-                if (getPendingLoginOtp() == null) {
-                    throw IOException("Your login verification expired. Please start login again.")
+                if (!response.ok) {
+                  throw new Error(
+                    data.message || data.Message || data.title ||
+                    ('OTP verification failed (HTTP ' + response.status + ').')
+                  );
                 }
 
-                clearSavedLoginOtp()
-                loginOtpVerificationInProgress = false
+                const nested = data.data || data.Data || {};
+                const token = data.token || data.Token ||
+                  data.accessToken || data.AccessToken ||
+                  nested.token || nested.Token ||
+                  nested.accessToken || nested.AccessToken;
 
-                val storage = if (pending.remember) "localStorage" else "sessionStorage"
-                val otherStorage = if (pending.remember) "sessionStorage" else "localStorage"
-                val script = """
-                    (function () {
-                      try {
-                        ${storage}.setItem('examo_token', ${JSONObject.quote(session.token)});
-                        ${storage}.setItem('examo_user', ${JSONObject.quote(session.userJson)});
-                        ${otherStorage}.removeItem('examo_token');
-                        ${otherStorage}.removeItem('examo_user');
-                        window.location.reload();
-                      } catch (error) {
-                        if (window.showExamoOtpStatus) {
-                          window.showExamoOtpStatus(
-                            'Could not save your login session. Please try again.',
-                            true, false, false
-                          );
-                        }
-                      }
-                    })();
-                """.trimIndent()
-                webView.evaluateJavascript(script, null)
-            } catch (error: Exception) {
-                loginOtpVerificationInProgress = false
-                val message = error.message ?: "Could not verify your code. Please try again."
-                val expired = message.contains("expired", ignoreCase = true)
-                setOtpRecoveryStatus(
-                    message,
-                    isError = true,
-                    expired = expired
-                )
-            }
-        }
-    }
+                const user = data.user || data.User ||
+                  nested.user || nested.User || nested || {};
 
-    private fun requestLoginOtpVerification(
-        email: String,
-        otp: String,
-        apiBaseUrl: String,
-        userAgent: String
-    ): VerifiedLoginSession {
-        val endpoint = "${apiBaseUrl.trimEnd('/')}/Auth/verify-login-otp"
-        val connection = URL(endpoint).openConnection() as HttpURLConnection
-
-        try {
-            connection.requestMethod = "POST"
-            connection.connectTimeout = 30000
-            connection.readTimeout = 60000
-            connection.instanceFollowRedirects = true
-            connection.doOutput = true
-            connection.useCaches = false
-            connection.setRequestProperty("Accept", "application/json, text/plain, */*")
-            connection.setRequestProperty("Origin", getString(R.string.examo_website_url).trimEnd('/'))
-            connection.setRequestProperty("Referer", getString(R.string.examo_website_url))
-            connection.setRequestProperty("Cache-Control", "no-cache")
-            connection.setRequestProperty("Content-Type", "application/json; charset=utf-8")
-            connection.setRequestProperty("User-Agent", userAgent)
-
-            val payload = JSONObject()
-                .put("email", email)
-                .put("otp", otp)
-                .toString()
-                .toByteArray(Charsets.UTF_8)
-
-            connection.setFixedLengthStreamingMode(payload.size)
-            connection.outputStream.use { output ->
-                output.write(payload)
-                output.flush()
-            }
-
-            val status = connection.responseCode
-            val responseStream = if (status in 200..299) {
-                connection.inputStream
-            } else {
-                connection.errorStream
-            }
-            val responseText = responseStream
-                ?.bufferedReader(Charsets.UTF_8)
-                ?.use { it.readText() }
-                ?.trim()
-                .orEmpty()
-
-            if (responseText.isBlank()) {
-                val responseType = connection.contentType ?: "unknown"
-                val responseLength = connection.contentLengthLong
-                val finalUrl = connection.url.toString()
-                throw IOException(
-                    "The API at $finalUrl returned HTTP $status with an empty body " +
-                        "(Content-Type: $responseType, length: $responseLength). " +
-                        "The app now uses the same API address as the website login. " +
-                        "Please retry; if this repeats, the live API deployment must be checked."
-                )
-            }
-
-            val response = try {
-                JSONObject(responseText)
-            } catch (_: Exception) {
-                val preview = responseText.take(160)
-                throw IOException(
-                    "Examo server returned an invalid response (HTTP ${status}): $preview"
-                )
-            }
-
-            if (status !in 200..299) {
-                val message = response.optString("message")
-                    .ifBlank { response.optString("Message") }
-                    .ifBlank { response.optString("title") }
-                    .ifBlank { response.optString("Title") }
-                    .ifBlank { "OTP verification failed (HTTP ${status})." }
-                throw IOException(message)
-            }
-
-            val nested = response.optJSONObject("data")
-                ?: response.optJSONObject("Data")
-            val token = response.optString("token")
-                .ifBlank { response.optString("Token") }
-                .ifBlank { response.optString("accessToken") }
-                .ifBlank { response.optString("AccessToken") }
-                .ifBlank {
-                    nested?.optString("token")
-                        ?.ifBlank { nested.optString("Token") }
-                        .orEmpty()
+                if (!token) {
+                  throw new Error('The server did not return a login token. Please retry.');
                 }
 
-            val user = response.optJSONObject("user")
-                ?: response.optJSONObject("User")
-                ?: nested?.optJSONObject("user")
-                ?: nested?.optJSONObject("User")
-                ?: JSONObject()
+                window.ExamoAuthBridge.completePendingLoginOtp(
+                  String(token),
+                  JSON.stringify(user)
+                );
+              } catch (error) {
+                const message = (error && error.message) ||
+                  'Could not verify your code. Please check your connection and retry.';
+                const expired = /expired|too many wrong attempts/i.test(message);
+                window.ExamoAuthBridge.failPendingLoginOtp(message, expired);
+              }
+            })();
+        """.trimIndent()
 
-            if (token.isBlank()) {
-                throw IOException("Login response did not include a session token. Please retry.")
-            }
-
-            return VerifiedLoginSession(token, user.toString())
-        } finally {
-            connection.disconnect()
-        }
+        webView.evaluateJavascript(script, null)
     }
 
     private fun openExternal(uri: Uri): Boolean {
@@ -2110,8 +2145,22 @@ class MainActivity : Activity() {
     }
 
     override fun onPause() {
-        if (::webView.isInitialized) webView.onPause()
+        if (::webView.isInitialized) {
+            persistLastExamoUrl(webView.url)
+            webView.onPause()
+        }
         super.onPause()
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus && ::webView.isInitialized && getPendingLoginOtp() != null) {
+            webView.postDelayed({
+                if (!isFinishing && !isDestroyed && getPendingLoginOtp() != null) {
+                    restorePendingLoginOtpIfNeeded(webView, webView.url)
+                }
+            }, 250L)
+        }
     }
 
     override fun onDestroy() {
