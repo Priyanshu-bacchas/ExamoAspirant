@@ -233,13 +233,18 @@ class MainActivity : Activity() {
 
                     val candidateApiBase = apiBaseUrl?.trim()?.trimEnd('/').orEmpty()
                     val parsedApiBase = Uri.parse(candidateApiBase)
-                    val safeApiBase = if (
+                    val oldApiBase = authRecoveryPrefs.getString("login_otp_api_base", null)
+                        ?.trim()
+                        ?.trimEnd('/')
+                        .orEmpty()
+                    val parsedOldApiBase = Uri.parse(oldApiBase)
+
+                    val safeApiBase = when {
                         parsedApiBase.scheme.equals("https", ignoreCase = true) &&
-                        !parsedApiBase.host.isNullOrBlank()
-                    ) {
-                        candidateApiBase
-                    } else {
-                        getString(R.string.examo_api_url).trimEnd('/')
+                            !parsedApiBase.host.isNullOrBlank() -> candidateApiBase
+                        parsedOldApiBase.scheme.equals("https", ignoreCase = true) &&
+                            !parsedOldApiBase.host.isNullOrBlank() -> oldApiBase
+                        else -> getString(R.string.examo_api_url).trimEnd('/')
                     }
 
                     val oldEmail = authRecoveryPrefs.getString("login_otp_email", null)
