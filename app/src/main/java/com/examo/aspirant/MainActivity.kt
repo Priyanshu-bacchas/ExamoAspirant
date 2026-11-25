@@ -531,9 +531,8 @@ class MainActivity : Activity() {
                 'body.examo-android-help-mode .topbar .breadcrumb strong{font-size:14px!important}',
                 '#examo-android-help-redesign{width:100%;max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:14px;color:#14213c;font-family:inherit}',
                 '#examo-android-help-redesign *{box-sizing:border-box}',
-                '.eah-hero{width:100%;overflow:hidden;border-radius:19px;border:1px solid #d8e4fb;background:#e9efff;box-shadow:0 7px 16px rgba(33,75,141,.09);line-height:0;min-height:0}',
-                '.eah-hero img{display:block;width:100%;height:auto;aspect-ratio:3/1;object-fit:cover}',
-                '.eah-hero-fallback{min-height:148px;background:linear-gradient(110deg,#dceaff 0%,#e3e7ff 60%,#eee6ff 100%);line-height:normal;display:flex;align-items:center;padding:20px 17px}',
+                '.eah-hero{display:block;width:100%;height:auto;min-height:0;aspect-ratio:382 / 116;overflow:hidden;border-radius:19px;border:1px solid #d8e4fb;background-color:#e9efff;background-position:center center;background-repeat:no-repeat;background-size:100% 100%;box-shadow:0 7px 16px rgba(33,75,141,.09);line-height:normal}',
+                '.eah-hero-fallback{aspect-ratio:382 / 116;min-height:0;background-image:linear-gradient(110deg,#dceaff 0%,#e3e7ff 60%,#eee6ff 100%)!important;display:flex;align-items:center;padding:20px 17px}',
                 '.eah-hero-fallback-content{max-width:78%;color:#12264a}',
                 '.eah-hero-fallback-content small{display:block;color:#1762cf;font-size:12px;font-weight:850;letter-spacing:.08em;margin-bottom:7px}',
                 '.eah-hero-fallback-content strong{display:block;font-size:23px;line-height:1.1;font-weight:850}',
@@ -607,7 +606,7 @@ class MainActivity : Activity() {
 
               function makeMarkup() {
                 return [
-                  '<section class="eah-hero"><img class="eah-hero-image" alt="Need Help? We are here for you."></section>',
+                  '<section class="eah-hero" role="img" aria-label="Need Help? We are here for you."></section>',
                   '<div class="eah-section-title">Quick Help</div>',
                   '<section class="eah-categories" aria-label="Help categories">',
                     '<button type="button" class="eah-category eah-user" data-category="User Guide"><span class="eah-category-icon"><svg viewBox="0 0 24 24"><path d="M3 5.5c3.2-1.4 6.2-.9 9 1.2v14c-2.8-2.1-5.8-2.6-9-1.2z"/><path d="M21 5.5c-3.2-1.4-6.2-.9-9 1.2v14c2.8-2.1 5.8-2.6 9-1.2z"/><path d="M6 9h3M6 12h3M15 9h3M15 12h3"/></svg></span><strong>User Guide</strong><small>Learn how to use Examo</small></button>',
@@ -852,15 +851,24 @@ class MainActivity : Activity() {
                   root.innerHTML = makeMarkup();
                   page.insertAdjacentElement('afterend', root);
 
-                  var bannerImage = root.querySelector('.eah-hero-image');
-                  if (bannerImage) {
-                    bannerImage.onerror = function () {
-                      var hero = root.querySelector('.eah-hero');
-                      if (!hero) return;
-                      hero.classList.add('eah-hero-fallback');
-                      hero.innerHTML = '<div class="eah-hero-fallback-content"><small>NEED HELP?</small><strong>We are Here for <em>You!</em></strong><p>Get quick answers, step-by-step guides or contact our support team.</p></div>';
+                  var bannerHero = root.querySelector('.eah-hero');
+                  if (bannerHero) {
+                    var bannerUrl = __EXAMO_HELP_BANNER_SRC__;
+                    var bannerLoader = new Image();
+                    bannerLoader.onload = function () {
+                      // Paint the same supplied banner as a fixed-ratio background.
+                      // This avoids a WebView image-element sizing artefact/black strip.
+                      bannerHero.style.backgroundImage = 'url("' + bannerUrl + '")';
                     };
-                    bannerImage.src = __EXAMO_HELP_BANNER_SRC__;
+                    bannerLoader.onerror = function () {
+                      bannerHero.classList.add('eah-hero-fallback');
+                      bannerHero.innerHTML = '<div class="eah-hero-fallback-content"><small>NEED HELP?</small><strong>We are Here for <em>You!</em></strong><p>Get quick answers, step-by-step guides or contact our support team.</p></div>';
+                    };
+                    if (bannerUrl) {
+                      bannerLoader.src = bannerUrl;
+                    } else {
+                      bannerLoader.onerror();
+                    }
                   }
 
                   root.querySelectorAll('.eah-category').forEach(function (button) {
