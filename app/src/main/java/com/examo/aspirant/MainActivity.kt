@@ -531,8 +531,9 @@ class MainActivity : Activity() {
                 'body.examo-android-help-mode .topbar .breadcrumb strong{font-size:14px!important}',
                 '#examo-android-help-redesign{width:100%;max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:14px;color:#14213c;font-family:inherit}',
                 '#examo-android-help-redesign *{box-sizing:border-box}',
-                '.eah-hero{display:block;width:100%;height:auto;min-height:0;aspect-ratio:382 / 116;overflow:hidden;border-radius:19px;border:1px solid #d8e4fb;background-color:#e9efff;background-position:center center;background-repeat:no-repeat;background-size:100% 100%;box-shadow:0 7px 16px rgba(33,75,141,.09);line-height:normal}',
-                '.eah-hero-fallback{aspect-ratio:382 / 116;min-height:0;background-image:linear-gradient(110deg,#dceaff 0%,#e3e7ff 60%,#eee6ff 100%)!important;display:flex;align-items:center;padding:20px 17px}',
+                '.eah-hero{display:block;width:100%;height:auto;min-height:0;overflow:hidden;border-radius:19px;border:1px solid #d8e4fb;background:transparent!important;box-shadow:0 7px 16px rgba(33,75,141,.09);line-height:0;padding:0!important}',
+                '.eah-hero-canvas{display:block;width:100%;height:auto;max-width:100%;margin:0;padding:0;border:0;background:transparent}',
+                '.eah-hero-fallback{min-height:148px;background:linear-gradient(110deg,#dceaff 0%,#e3e7ff 60%,#eee6ff 100%)!important;display:flex;align-items:center;padding:20px 17px;line-height:normal}',
                 '.eah-hero-fallback-content{max-width:78%;color:#12264a}',
                 '.eah-hero-fallback-content small{display:block;color:#1762cf;font-size:12px;font-weight:850;letter-spacing:.08em;margin-bottom:7px}',
                 '.eah-hero-fallback-content strong{display:block;font-size:23px;line-height:1.1;font-weight:850}',
@@ -606,7 +607,7 @@ class MainActivity : Activity() {
 
               function makeMarkup() {
                 return [
-                  '<section class="eah-hero" role="img" aria-label="Need Help? We are here for you."></section>',
+                  '<section class="eah-hero" role="img" aria-label="Need Help? We are here for you."><canvas class="eah-hero-canvas" width="382" height="116"></canvas></section>',
                   '<div class="eah-section-title">Quick Help</div>',
                   '<section class="eah-categories" aria-label="Help categories">',
                     '<button type="button" class="eah-category eah-user" data-category="User Guide"><span class="eah-category-icon"><svg viewBox="0 0 24 24"><path d="M3 5.5c3.2-1.4 6.2-.9 9 1.2v14c-2.8-2.1-5.8-2.6-9-1.2z"/><path d="M21 5.5c-3.2-1.4-6.2-.9-9 1.2v14c2.8-2.1 5.8-2.6 9-1.2z"/><path d="M6 9h3M6 12h3M15 9h3M15 12h3"/></svg></span><strong>User Guide</strong><small>Learn how to use Examo</small></button>',
@@ -854,11 +855,15 @@ class MainActivity : Activity() {
                   var bannerHero = root.querySelector('.eah-hero');
                   if (bannerHero) {
                     var bannerUrl = __EXAMO_HELP_BANNER_SRC__;
+                    var bannerCanvas = bannerHero.querySelector('.eah-hero-canvas');
+                    var bannerContext = bannerCanvas ? bannerCanvas.getContext('2d') : null;
                     var bannerLoader = new Image();
                     bannerLoader.onload = function () {
-                      // Paint the same supplied banner as a fixed-ratio background.
-                      // This avoids a WebView image-element sizing artefact/black strip.
-                      bannerHero.style.backgroundImage = 'url("' + bannerUrl + '")';
+                      if (!bannerCanvas || !bannerContext) return;
+                      // Draw the complete source image to its exact 382x116 canvas.
+                      // The canvas itself determines the rendered height; no trailing area is created.
+                      bannerContext.clearRect(0, 0, 382, 116);
+                      bannerContext.drawImage(bannerLoader, 0, 0, 382, 116);
                     };
                     bannerLoader.onerror = function () {
                       bannerHero.classList.add('eah-hero-fallback');
