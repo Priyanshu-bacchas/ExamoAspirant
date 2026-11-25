@@ -25,6 +25,18 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
+import android.text.InputFilter
+import android.text.InputType
+import android.view.Gravity
+import android.view.inputmethod.EditorInfo
+import android.widget.Button
+import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.ScrollView
+import android.widget.TextView
+import android.view.WindowManager
 import android.widget.Toast
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -48,6 +60,14 @@ class MainActivity : Activity() {
     private var customViewCallback: WebChromeClient.CustomViewCallback? = null
     private var originalSystemUiVisibility: Int = 0
     private var pendingDownload: DownloadInfo? = null
+    private var pendingOtpOverlay: View? = null
+    private var pendingOtpEmailShown: String? = null
+    private var pendingOtpInput: EditText? = null
+    private var pendingOtpStatus: TextView? = null
+    private var pendingOtpVerifyButton: Button? = null
+    private var pendingOtpRestartButton: Button? = null
+    private var pendingOtpCodeToVerify: String? = null
+    private var mainWebViewPageReady = false
 
     // Recover the login OTP step if Android recreates the WebView while Gmail is open.
     // Only the destination email, remember preference and creation time are stored;
@@ -101,6 +121,11 @@ class MainActivity : Activity() {
         webView.translationY = 0f
         root.addView(webView, FrameLayout.LayoutParams(-1, -1))
         setContentView(root)
+        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+
+        if (pendingAtLaunch != null) {
+            showNativePendingLoginOtpScreen(pendingAtLaunch)
+        }
 
         root.post {
             if (pendingAtLaunch != null) {
@@ -263,11 +288,16 @@ class MainActivity : Activity() {
                         .putBoolean("login_otp_remember", remember)
                         .putLong("login_otp_started_at", startedAt)
                         .commit()
+
+                    runOnUiThread {
+                        getPendingLoginOtp()?.let { showNativePendingLoginOtpScreen(it) }
+                    }
                 }
 
                 @JavascriptInterface
                 fun clearPendingLoginOtp() {
                     clearSavedLoginOtp()
+                    runOnUiThread { removeNativePendingLoginOtpScreen() }
                 }
 
                 @JavascriptInterface
@@ -301,20 +331,32 @@ class MainActivity : Activity() {
                                 ${storage}.setItem('examo_user', ${JSONObject.quote(safeUser)});
                                 ${otherStorage}.removeItem('examo_token');
                                 ${otherStorage}.removeItem('examo_user');
-                                window.location.reload();
+                                return true;
                               } catch (error) {
-                                if (window.showExamoOtpStatus) {
-                                  window.showExamoOtpStatus(
-                                    'Could not save your login session. Please try again.',
-                                    true, false, false
-                                  );
-                                }
+                                return false;
                               }
                             })();
                         """.trimIndent()
-                        clearSavedLoginOtp()
-                        loginOtpVerificationInProgress = false
-                        webView.evaluateJavascript(sessionScript, null)
+
+                        webView.evaluateJavascript(sessionScript) { result ->
+                            if (result == "true") {
+                                clearSavedLoginOtp()
+                                loginOtpVerificationInProgress = false
+                                pendingOtpCodeToVerify = null
+                                removeNativePendingLoginOtpScreen()
+                                mainWebViewPageReady = false
+                                webView.visibility = View.VISIBLE
+                                webView.translationY = 0f
+                                authSheetOpen = true
+                                webView.reload()
+                            } else {
+                                loginOtpVerificationInProgress = false
+                                setOtpRecoveryStatus(
+                                    "Could not save your login session. Please try again.",
+                                    isError = true
+                                )
+                            }
+                        }
                     }
                 }
 
@@ -336,11 +378,12 @@ class MainActivity : Activity() {
                     runOnUiThread {
                         clearSavedLoginOtp()
                         loginOtpVerificationInProgress = false
-                        webView.evaluateJavascript(
-                            "document.getElementById('examo-otp-recovery')?.remove();",
-                            null
-                        )
-                        webView.reload()
+                        pendingOtpCodeToVerify = null
+                        removeNativePendingLoginOtpScreen()
+                        webView.visibility = View.VISIBLE
+                        webView.translationY = 0f
+                        authSheetOpen = true
+                        webView.loadUrl(getString(R.string.examo_website_url))
                     }
                 }
             }, "ExamoAuthBridge")
@@ -357,8 +400,20 @@ class MainActivity : Activity() {
                     return openExternal(uri)
                 }
 
+                override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
+                    super.onPageStarted(view, url, favicon)
+                    if (view == webView) mainWebViewPageReady = false
+                }
+
                 override fun onPageFinished(view: WebView?, url: String?) {
                     super.onPageFinished(view, url)
+                    if (view == webView) {
+                        mainWebViewPageReady = true
+                        pendingOtpCodeToVerify?.let { code ->
+                            pendingOtpCodeToVerify = null
+                            getPendingLoginOtp()?.let { handlePendingLoginOtpVerification(it.email, code) }
+                        }
+                    }
                     persistLastExamoUrl(url)
                     installMobileNavigationFix(view)
                     hideGoogleSignInInApp(view)
@@ -778,6 +833,7 @@ class MainActivity : Activity() {
         runCatching { crashedView.destroy() }
 
         val replacement = createWebView()
+        mainWebViewPageReady = false
         webView = replacement
         root.addView(replacement, childIndex, layoutParams)
 
@@ -798,170 +854,232 @@ class MainActivity : Activity() {
     }
 
 
-    private fun restorePendingLoginOtpIfNeeded(view: WebView?, url: String?) {
-        if (view == null || !isExamoWebsiteUrl(url)) return
 
+    private fun restorePendingLoginOtpIfNeeded(view: WebView?, url: String?) {
         val pending = getPendingLoginOtp() ?: return
 
-        // Keep the same WebView visible after returning from Gmail or process recreation.
-        webView.animate().cancel()
-        webView.visibility = View.VISIBLE
-        webView.translationY = 0f
-        authSheetOpen = true
-
-        val otpPageCheck = """
-            (function () {
-              return !!document.getElementById('examo-otp-recovery') ||
-                Array.from(document.querySelectorAll('form.ex-form h2')).some(function (node) {
-                  return (node.textContent || '').trim().toLowerCase() === 'confirm your login';
-                });
-            })();
-        """.trimIndent()
-
-        view.evaluateJavascript(otpPageCheck) { result ->
-            // Keep the original React OTP screen and its input untouched.
-            // Hide only the escape link so the pending login cannot be abandoned
-            // accidentally while the user switches to Gmail to read the code.
-            if (result == "true") {
-                val lockScript = """
-                    (function () {
-                      var otpHeading = Array.from(document.querySelectorAll('form.ex-form h2'))
-                        .find(function (node) {
-                          return (node.textContent || '').trim().toLowerCase() === 'confirm your login';
-                        });
-                      var otpForm = otpHeading && otpHeading.closest('form');
-                      var actions = otpForm && otpForm.querySelector('.ex-otp-actions');
-                      if (actions) {
-                        var buttons = actions.querySelectorAll('button');
-                        if (buttons.length > 1) buttons[buttons.length - 1].style.display = 'none';
-                      }
-                    })();
-                """.trimIndent()
-                view.evaluateJavascript(lockScript, null)
-                return@evaluateJavascript
-            }
-
-            val latest = getPendingLoginOtp() ?: return@evaluateJavascript
-            if (latest.email.equals(pending.email, ignoreCase = true)) {
-                showPendingLoginOtpScreen(view, latest)
-            }
+        // Do not depend on the WebView URL/DOM. The OTP screen is a native
+        // Activity overlay and stays visible even if the page navigates/reloads.
+        if (::webView.isInitialized) {
+            webView.animate().cancel()
+            webView.visibility = View.VISIBLE
+            webView.translationY = 0f
         }
+        authSheetOpen = true
+        showNativePendingLoginOtpScreen(pending)
     }
 
-    private fun showPendingLoginOtpScreen(view: WebView, pending: PendingLoginOtp) {
-        val emailJson = JSONObject.quote(pending.email)
-        val script = """
-            (function () {
-              var existing = document.getElementById('examo-otp-recovery');
-              if (existing) {
-                existing.style.display = 'flex';
-                return;
-              }
+    private fun showNativePendingLoginOtpScreen(pending: PendingLoginOtp) {
+        if (!::root.isInitialized || isFinishing || isDestroyed) return
 
-              var style = document.getElementById('examo-otp-recovery-style');
-              if (!style) {
-                style = document.createElement('style');
-                style.id = 'examo-otp-recovery-style';
-                style.textContent = [
-                  '#examo-otp-recovery {position:fixed;inset:0;z-index:2147483647;width:100%;height:100%;overflow-y:auto;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:16px 12px;background:linear-gradient(135deg,#eef3fb 0%,#f7f9fd 55%,#e9f0fb 100%);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;color:#0f172a;overscroll-behavior:contain;}',
-                  '#examo-otp-recovery * {box-sizing:border-box;}',
-                  '#examo-otp-recovery .ex-bg {position:absolute;border-radius:50%;filter:blur(70px);pointer-events:none;}',
-                  '#examo-otp-recovery .ex-bg-1 {width:260px;height:260px;top:-100px;left:-80px;background:rgba(59,130,246,.20);}',
-                  '#examo-otp-recovery .ex-bg-2 {width:280px;height:280px;bottom:-120px;right:-90px;background:rgba(27,42,82,.16);}',
-                  '#examo-otp-recovery .ex-shell {position:relative;z-index:1;width:100%;max-width:560px;min-height:0;height:auto;display:block;background:#fff;border-radius:22px;overflow:hidden;box-shadow:0 24px 60px -24px rgba(27,42,82,.32),0 0 0 1px rgba(27,42,82,.06);}',
-                  '#examo-otp-recovery .ex-panel {display:flex;flex-direction:column;justify-content:center;padding:30px 24px;background:#fff;}',
-                  '#examo-otp-recovery .ex-mobile-brand {display:flex;align-items:center;justify-content:center;margin-bottom:24px;}',
-                  '#examo-otp-recovery .ex-brand {display:flex;align-items:center;gap:12px;}',
-                  '#examo-otp-recovery .ex-logo {width:48px;height:48px;display:flex;align-items:center;justify-content:center;border-radius:14px;background:#1b2a52;color:#fff;font-size:28px;font-weight:800;}',
-                  '#examo-otp-recovery .ex-brand-name {font-size:25px;font-weight:800;color:#1b2a52;}',
-                  '#examo-otp-recovery .ex-brand-sub {font-size:11px;color:#64748b;}',
-                  '#examo-otp-recovery .ex-form h2 {margin:0;text-align:center;font-size:25px;font-weight:700;color:#0f172a;}',
-                  '#examo-otp-recovery .ex-sub {text-align:center;color:#64748b;margin:6px 0 22px;font-size:14.5px;line-height:1.5;overflow-wrap:anywhere;}',
-                  '#examo-otp-recovery .ex-field {display:flex;flex-direction:column;gap:6px;margin-bottom:16px;}',
-                  '#examo-otp-recovery .ex-field label {font-size:13px;font-weight:600;color:#1e293b;}',
-                  '#examo-otp-recovery .ex-field input {width:100%;padding:13px 14px;border:1px solid #d3dbe8;border-radius:9px;background:#f4f7fc;font-size:20px;letter-spacing:7px;text-align:center;outline:none;color:#0f172a;}',
-                  '#examo-otp-recovery .ex-field input:focus {border-color:#1b3a7a;background:#fff;box-shadow:0 0 0 4px rgba(27,58,122,.12);}',
-                  '#examo-otp-recovery .ex-btn {width:100%;padding:13px;border:0;border-radius:10px;background:linear-gradient(135deg,#234a96,#1b3a7a);color:#fff;font-size:16px;font-weight:600;box-shadow:0 10px 20px -8px rgba(27,58,122,.6);}',
-                  '#examo-otp-recovery .ex-btn:disabled {opacity:.65;}',
-                  '#examo-otp-recovery .ex-alert {margin:0 0 14px;padding:10px 12px;border-radius:9px;font-size:13px;line-height:1.45;overflow-wrap:anywhere;}',
-                  '#examo-otp-recovery .ex-error {display:block;background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;}',
-                  '#examo-otp-recovery .ex-info {display:block;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;}',
-                  '#examo-otp-recovery .ex-foot {margin:18px 0 0;text-align:center;font-size:13px;line-height:1.5;color:#64748b;}',
-                  '#examo-otp-recovery .ex-restart {display:none;margin:14px auto 0;padding:8px 12px;border:0;background:transparent;color:#1b5fd6;font-size:14px;text-decoration:underline;}',
-                  '@media(max-width:520px){#examo-otp-recovery{padding:14px 12px;}#examo-otp-recovery .ex-panel{padding:26px 20px;}}'
-                ].join('');
-                document.head.appendChild(style);
-              }
+        val existing = pendingOtpOverlay
+        if (existing != null && existing.parent === root &&
+            pendingOtpEmailShown.equals(pending.email, ignoreCase = true)
+        ) {
+            existing.visibility = View.VISIBLE
+            existing.bringToFront()
+            return
+        }
 
-              var root = document.createElement('div');
-              root.id = 'examo-otp-recovery';
-              root.innerHTML =
-                '<div class="ex-bg ex-bg-1"></div>' +
-                '<div class="ex-bg ex-bg-2"></div>' +
-                '<div class="ex-shell"><section class="ex-panel">' +
-                '<div class="ex-mobile-brand"><div class="ex-brand"><div class="ex-logo">E</div>' +
-                '<div><div class="ex-brand-name">Examo</div><div class="ex-brand-sub">Student Management</div></div></div></div>' +
-                '<form class="ex-form" id="examo-otp-recovery-form">' +
-                '<h2>Confirm Your Login</h2>' +
-                '<p class="ex-sub">Enter the 6-digit code sent to <b id="examo-otp-email"></b></p>' +
-                '<div class="ex-field"><label for="examo-otp-code">Verification Code</label>' +
-                '<input id="examo-otp-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="------" required /></div>' +
-                '<div id="examo-otp-status" class="ex-alert" style="display:none"></div>' +
-                '<button id="examo-otp-submit" class="ex-btn" type="submit">Login</button>' +
-                '<p class="ex-foot">Keep this page open while checking your email. You will stay on this verification screen until login is complete.</p>' +
-                '<button id="examo-otp-restart" class="ex-restart" type="button">OTP expired? Start login again</button>' +
-                '</form></section></div>';
+        removeNativePendingLoginOtpScreen()
 
-              document.body.appendChild(root);
-              document.getElementById('examo-otp-email').textContent = EMAIL_JSON_PLACEHOLDER;
+        fun rounded(color: Int, radiusDp: Int, strokeColor: Int? = null): GradientDrawable {
+            return GradientDrawable().apply {
+                shape = GradientDrawable.RECTANGLE
+                setColor(color)
+                cornerRadius = dp(radiusDp).toFloat()
+                if (strokeColor != null) setStroke(dp(1), strokeColor)
+            }
+        }
 
-              var form = document.getElementById('examo-otp-recovery-form');
-              var input = document.getElementById('examo-otp-code');
-              var submit = document.getElementById('examo-otp-submit');
-              var restart = document.getElementById('examo-otp-restart');
+        val overlay = FrameLayout(this).apply {
+            setBackgroundColor(Color.rgb(239, 244, 252))
+            isClickable = true
+            isFocusable = true
+            elevation = dp(18).toFloat()
+        }
 
-              input.addEventListener('input', function () {
-                input.value = input.value.replace(/\D/g, '').slice(0, 6);
-              });
+        val scroll = ScrollView(this).apply {
+            isFillViewport = true
+            clipToPadding = false
+            setPadding(dp(18), dp(20), dp(18), dp(20))
+        }
 
-              form.addEventListener('submit', function (event) {
-                event.preventDefault();
-                var code = input.value.trim();
-                if (!/^[0-9]{6}$/.test(code)) {
-                  showExamoOtpStatus('Enter the 6-digit code.', true, false, false);
-                  return;
-                }
-                submit.disabled = true;
-                submit.textContent = 'Verifying...';
-                showExamoOtpStatus('Verifying your login securely...', false, false, true);
-                if (window.ExamoAuthBridge) {
-                  window.ExamoAuthBridge.verifyPendingLoginOtp(EMAIL_JSON_PLACEHOLDER, code);
-                } else {
-                  showExamoOtpStatus('Secure login bridge is unavailable. Please reopen Examo.', true, false, false);
-                }
-              });
+        val center = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+        }
 
-              restart.addEventListener('click', function () {
-                if (window.ExamoAuthBridge) window.ExamoAuthBridge.restartPendingLogin();
-              });
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            setPadding(dp(24), dp(28), dp(24), dp(26))
+            background = rounded(Color.WHITE, 22, Color.rgb(226, 232, 240))
+            elevation = dp(5).toFloat()
+        }
 
-              window.showExamoOtpStatus = function (message, isError, expired, busy) {
-                var status = document.getElementById('examo-otp-status');
-                var button = document.getElementById('examo-otp-submit');
-                var restartButton = document.getElementById('examo-otp-restart');
-                if (!status || !button) return;
-                status.textContent = message || '';
-                status.className = 'ex-alert ' + (isError ? 'ex-error' : 'ex-info');
-                status.style.display = message ? 'block' : 'none';
-                button.disabled = !!busy;
-                button.textContent = busy ? 'Verifying...' : 'Login';
-                if (restartButton) restartButton.style.display = expired ? 'block' : 'none';
-              };
+        val brandRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        val logo = TextView(this).apply {
+            text = "E"
+            textSize = 27f
+            setTextColor(Color.WHITE)
+            typeface = Typeface.DEFAULT_BOLD
+            gravity = Gravity.CENTER
+            background = rounded(Color.rgb(27, 42, 82), 13)
+        }
+        brandRow.addView(logo, LinearLayout.LayoutParams(dp(52), dp(52)))
 
-              window.setTimeout(function () { input.focus(); }, 120);
-            })();
-        """.trimIndent().replace("EMAIL_JSON_PLACEHOLDER", emailJson)
-        view.evaluateJavascript(script, null)
+        val brandText = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(12), 0, 0, 0)
+        }
+        val brandName = TextView(this).apply {
+            text = "Examo"
+            textSize = 25f
+            setTextColor(Color.rgb(27, 42, 82))
+            typeface = Typeface.DEFAULT_BOLD
+        }
+        val brandSub = TextView(this).apply {
+            text = "Student Management"
+            textSize = 12f
+            setTextColor(Color.rgb(100, 116, 139))
+        }
+        brandText.addView(brandName)
+        brandText.addView(brandSub)
+        brandRow.addView(brandText)
+
+        val title = TextView(this).apply {
+            text = "Confirm Your Login"
+            textSize = 25f
+            setTextColor(Color.rgb(15, 23, 42))
+            typeface = Typeface.DEFAULT_BOLD
+            gravity = Gravity.CENTER
+            setPadding(0, dp(28), 0, dp(10))
+        }
+        val subtitle = TextView(this).apply {
+            text = "Enter the 6-digit code sent to\n" + pending.email
+            textSize = 15f
+            setTextColor(Color.rgb(100, 116, 139))
+            gravity = Gravity.CENTER
+            setPadding(0, 0, 0, dp(24))
+        }
+        val label = TextView(this).apply {
+            text = "Verification Code"
+            textSize = 14f
+            setTextColor(Color.rgb(30, 41, 59))
+            typeface = Typeface.DEFAULT_BOLD
+        }
+        val input = EditText(this).apply {
+            hint = "------"
+            textSize = 24f
+            letterSpacing = 0.28f
+            gravity = Gravity.CENTER
+            inputType = InputType.TYPE_CLASS_NUMBER
+            imeOptions = EditorInfo.IME_ACTION_DONE
+            isSingleLine = true
+            filters = arrayOf(InputFilter.LengthFilter(6))
+            setTextColor(Color.rgb(15, 23, 42))
+            setHintTextColor(Color.rgb(148, 163, 184))
+            setPadding(dp(14), dp(14), dp(14), dp(14))
+            background = rounded(Color.rgb(244, 247, 252), 10, Color.rgb(211, 219, 232))
+            setAutofillHints(View.AUTOFILL_HINT_SMS_OTP)
+        }
+
+        val status = TextView(this).apply {
+            textSize = 13f
+            setPadding(dp(12), dp(10), dp(12), dp(10))
+            background = rounded(Color.rgb(254, 242, 242), 9, Color.rgb(254, 202, 202))
+            visibility = View.GONE
+        }
+
+        val verify = Button(this).apply {
+            text = "Verify & Login"
+            isAllCaps = false
+            textSize = 16f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(Color.WHITE)
+            background = rounded(Color.rgb(35, 74, 150), 10)
+            setPadding(dp(12), dp(10), dp(12), dp(10))
+        }
+
+        val help = TextView(this).apply {
+            text = "You can switch to Gmail to read your code. Return to Examo from Recent Apps; this verification screen will stay here."
+            textSize = 13f
+            setTextColor(Color.rgb(100, 116, 139))
+            gravity = Gravity.CENTER
+            setPadding(0, dp(18), 0, 0)
+        }
+
+        val restart = Button(this).apply {
+            text = "Start login again"
+            isAllCaps = false
+            textSize = 13f
+            setTextColor(Color.rgb(27, 95, 214))
+            background = android.graphics.drawable.ColorDrawable(Color.TRANSPARENT)
+            visibility = View.GONE
+        }
+
+        card.addView(brandRow, LinearLayout.LayoutParams(-2, -2))
+        card.addView(title, LinearLayout.LayoutParams(-1, -2))
+        card.addView(subtitle, LinearLayout.LayoutParams(-1, -2))
+        card.addView(label, LinearLayout.LayoutParams(-1, -2))
+        card.addView(input, LinearLayout.LayoutParams(-1, dp(62)).apply { topMargin = dp(8) })
+        card.addView(status, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(14) })
+        card.addView(verify, LinearLayout.LayoutParams(-1, dp(58)).apply { topMargin = dp(18) })
+        card.addView(help, LinearLayout.LayoutParams(-1, -2))
+        card.addView(restart, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+
+        center.addView(card, LinearLayout.LayoutParams(-1, -2))
+        scroll.addView(center, ScrollView.LayoutParams(-1, -1))
+        overlay.addView(scroll, FrameLayout.LayoutParams(-1, -1))
+
+        pendingOtpOverlay = overlay
+        pendingOtpEmailShown = pending.email
+        pendingOtpInput = input
+        pendingOtpStatus = status
+        pendingOtpVerifyButton = verify
+        pendingOtpRestartButton = restart
+
+        verify.setOnClickListener {
+            val code = input.text?.toString()?.trim().orEmpty()
+            handlePendingLoginOtpVerification(pending.email, code)
+        }
+        input.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                verify.performClick()
+                true
+            } else false
+        }
+        restart.setOnClickListener {
+            clearSavedLoginOtp()
+            loginOtpVerificationInProgress = false
+            pendingOtpCodeToVerify = null
+            removeNativePendingLoginOtpScreen()
+            if (::webView.isInitialized) {
+                webView.visibility = View.VISIBLE
+                webView.translationY = 0f
+                authSheetOpen = true
+                webView.loadUrl(getString(R.string.examo_website_url))
+            }
+        }
+
+        root.addView(overlay, FrameLayout.LayoutParams(-1, -1))
+        overlay.bringToFront()
+    }
+
+    private fun removeNativePendingLoginOtpScreen() {
+        pendingOtpOverlay?.let { view ->
+            if (view.parent === root) root.removeView(view)
+        }
+        pendingOtpOverlay = null
+        pendingOtpEmailShown = null
+        pendingOtpInput = null
+        pendingOtpStatus = null
+        pendingOtpVerifyButton = null
+        pendingOtpRestartButton = null
     }
 
     private fun setOtpRecoveryStatus(
@@ -970,6 +1088,29 @@ class MainActivity : Activity() {
         expired: Boolean = false,
         busy: Boolean = false
     ) {
+        pendingOtpStatus?.let { status ->
+            status.text = message
+            status.setTextColor(
+                if (isError) Color.rgb(185, 28, 28) else Color.rgb(29, 78, 216)
+            )
+            status.background = GradientDrawable().apply {
+                shape = GradientDrawable.RECTANGLE
+                cornerRadius = dp(9).toFloat()
+                setColor(if (isError) Color.rgb(254, 242, 242) else Color.rgb(239, 246, 255))
+                setStroke(
+                    dp(1),
+                    if (isError) Color.rgb(254, 202, 202) else Color.rgb(191, 219, 254)
+                )
+            }
+            status.visibility = if (message.isBlank()) View.GONE else View.VISIBLE
+        }
+
+        pendingOtpVerifyButton?.let { button ->
+            button.isEnabled = !busy
+            button.text = if (busy) "Verifying..." else "Verify & Login"
+        }
+        pendingOtpRestartButton?.visibility = if (expired) View.VISIBLE else View.GONE
+
         val script = """
             (function () {
               if (window.showExamoOtpStatus) {
@@ -1012,6 +1153,16 @@ class MainActivity : Activity() {
         val code = otp?.trim().orEmpty()
         if (!code.matches(Regex("^\\d{6}$"))) {
             setOtpRecoveryStatus("Enter the 6-digit code.", isError = true)
+            return
+        }
+
+        if (!mainWebViewPageReady) {
+            pendingOtpCodeToVerify = code
+            setOtpRecoveryStatus(
+                "Connecting securely to Examo...",
+                isError = false,
+                busy = true
+            )
             return
         }
 
@@ -2120,13 +2271,13 @@ class MainActivity : Activity() {
     @Suppress("DEPRECATION")
     override fun onBackPressed() {
         if (customView != null) { hideCustomView(); return }
-        if (getPendingLoginOtp() != null) {
+        getPendingLoginOtp()?.let { pending ->
+            showNativePendingLoginOtpScreen(pending)
             Toast.makeText(
                 this,
                 "Enter the 6-digit login code to complete verification.",
                 Toast.LENGTH_SHORT
             ).show()
-            restorePendingLoginOtpIfNeeded(webView, webView.url)
             return
         }
         if (authSheetOpen) { showWelcomeSplash(); return }
@@ -2149,9 +2300,10 @@ class MainActivity : Activity() {
 
             // A pending OTP flow always wins over the welcome screen, including
             // when the Android task was recreated while Gmail was foregrounded.
-            if (getPendingLoginOtp() != null) {
+            getPendingLoginOtp()?.let { pending ->
                 webView.animate().cancel()
                 webView.visibility = View.VISIBLE
+                showNativePendingLoginOtpScreen(pending)
                 webView.translationY = 0f
                 authSheetOpen = true
 
@@ -2172,7 +2324,8 @@ class MainActivity : Activity() {
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         setIntent(intent)
-        if (::webView.isInitialized && getPendingLoginOtp() != null) {
+        if (::webView.isInitialized) getPendingLoginOtp()?.let { pending ->
+            showNativePendingLoginOtpScreen(pending)
             webView.animate().cancel()
             webView.visibility = View.VISIBLE
             webView.translationY = 0f
@@ -2195,7 +2348,8 @@ class MainActivity : Activity() {
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
-        if (hasFocus && ::webView.isInitialized && getPendingLoginOtp() != null) {
+        if (hasFocus && ::webView.isInitialized) getPendingLoginOtp()?.let { pending ->
+            showNativePendingLoginOtpScreen(pending)
             webView.animate().cancel()
             webView.visibility = View.VISIBLE
             webView.translationY = 0f
