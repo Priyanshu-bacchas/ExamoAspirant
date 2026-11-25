@@ -419,6 +419,7 @@ class MainActivity : Activity() {
                     hideGoogleSignInInApp(view)
                     installLoginSwipeBorder(view)
                     installLoginOtpRecovery(view)
+                    installAndroidHelpRedesign(view)
                     restorePendingLoginOtpIfNeeded(view, url)
                 }
 
@@ -504,6 +505,452 @@ class MainActivity : Activity() {
                 }
             }
         }
+    }
+
+    // Android-only Help page redesign. The website and its APIs remain unchanged.
+    // This is injected only into the main WebView and only while the Help page is active.
+    private fun installAndroidHelpRedesign(view: WebView?) {
+        if (view == null || !::webView.isInitialized || view !== webView) return
+
+        val script = """
+            (function () {
+              if (window.__examoAndroidHelpBooted) {
+                window.__examoApplyAndroidHelp && window.__examoApplyAndroidHelp();
+                return;
+              }
+              window.__examoAndroidHelpBooted = true;
+
+              var style = document.createElement('style');
+              style.id = 'examo-android-help-style';
+              style.textContent = [
+                'body.examo-android-help-mode{background:#edf3fc!important}',
+                'body.examo-android-help-mode .content-area{padding:14px 12px 26px!important;background:linear-gradient(180deg,#f3f7ff 0%,#eaf1ff 100%)!important;min-width:0!important;overflow-x:hidden!important}',
+                'body.examo-android-help-mode .hs-page{display:block!important;width:100%!important;max-width:100%!important;margin:0!important;min-width:0!important}',
+                'body.examo-android-help-mode .hs-main,body.examo-android-help-mode .hs-side{display:none!important}',
+                'body.examo-android-help-mode .topbar .breadcrumb strong{font-size:14px!important}',
+                '#examo-android-help-redesign{width:100%;max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:14px;color:#14213c;font-family:inherit}',
+                '#examo-android-help-redesign *{box-sizing:border-box}',
+                '.eah-hero{position:relative;min-height:188px;overflow:hidden;border-radius:20px;padding:20px 17px 18px;background:radial-gradient(circle at 88% 12%,rgba(255,255,255,.72),transparent 27%),linear-gradient(112deg,#dceaff 0%,#e3e7ff 58%,#eee6ff 100%);border:1px solid #d7e3fb;box-shadow:0 7px 16px rgba(33,75,141,.09)}',
+                '.eah-hero-copy{position:relative;z-index:2;width:66%;max-width:430px}',
+                '.eah-hero-kicker{display:inline-flex;align-items:center;gap:6px;margin:0 0 7px;color:#1762cf;font-weight:850;font-size:12px;letter-spacing:.08em;text-transform:uppercase}',
+                '.eah-hero h1{margin:0;color:#12264a;font-size:clamp(23px,6vw,31px);line-height:1.08;font-weight:850;letter-spacing:-.035em}',
+                '.eah-hero h1 em{font-style:normal;color:#1765dc}',
+                '.eah-hero p{margin:10px 0 0;color:#435a7b;font-size:13px;line-height:1.45;max-width:330px}',
+                '.eah-hero-art{position:absolute;right:0;bottom:0;width:43%;height:100%;display:flex;align-items:flex-end;justify-content:flex-end;pointer-events:none}',
+                '.eah-hero-art svg{display:block;width:100%;height:100%;max-height:188px;overflow:visible}',
+                '.eah-search{height:50px;display:flex;align-items:center;gap:10px;padding:5px 6px 5px 15px;margin-top:-1px;background:#fff;border:1px solid #ccdaf1;border-radius:999px;box-shadow:0 5px 13px rgba(33,75,141,.10)}',
+                '.eah-search-icon{flex:0 0 auto;color:#617894;display:flex}',
+                '.eah-search input{flex:1;min-width:0;height:38px;border:0!important;outline:0!important;background:transparent!important;box-shadow:none!important;padding:0!important;font-size:14px!important;color:#1e3558!important}',
+                '.eah-search input::placeholder{color:#8998ad}',
+                '.eah-search button{width:38px;height:38px;flex:0 0 38px;display:flex;align-items:center;justify-content:center;border:0;border-radius:50%;background:linear-gradient(135deg,#1674eb,#164bbd);color:#fff}',
+                '.eah-section-title{margin:2px 2px -5px;color:#14284b;font-weight:850;font-size:20px;line-height:1.2;display:flex;align-items:center;gap:9px}',
+                '.eah-section-title:before{content:"";width:4px;height:23px;border-radius:8px;background:#2469df;display:block}',
+                '.eah-categories{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}',
+                '.eah-category{min-width:0;min-height:112px;padding:12px 10px 11px;text-align:left;border:1px solid rgba(255,255,255,.9);border-radius:17px;box-shadow:0 4px 10px rgba(34,65,116,.06);display:flex;flex-direction:column;align-items:flex-start;gap:5px;color:#14213c;cursor:pointer;position:relative;overflow:hidden;-webkit-tap-highlight-color:transparent}',
+                '.eah-category:after{content:"›";position:absolute;right:9px;top:49px;font-size:25px;line-height:1;color:#14213c;font-weight:400}',
+                '.eah-category:active{transform:scale(.985)}',
+                '.eah-category-icon{width:32px;height:32px;display:flex;align-items:center;justify-content:center;margin-bottom:1px}',
+                '.eah-category-icon svg{width:31px;height:31px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}',
+                '.eah-category strong{font-size:12px;line-height:1.2;font-weight:850;padding-right:13px}',
+                '.eah-category small{font-size:10px;line-height:1.3;color:#43536b;max-width:95%;padding-right:8px}',
+                '.eah-user{background:linear-gradient(145deg,#dff2ff,#e9f4ff);color:#1593e8;border-color:#cde8ff}',
+                '.eah-account{background:linear-gradient(145deg,#eee7ff,#f0ebff);color:#8250ed;border-color:#e2d8ff}',
+                '.eah-exam{background:linear-gradient(145deg,#fff0e5,#fff6ee);color:#f28a20;border-color:#ffe1cb}',
+                '.eah-jobs{background:linear-gradient(145deg,#e1f8eb,#e9f9ef);color:#12a34a;border-color:#cef1dc}',
+                '.eah-docs{background:linear-gradient(145deg,#ffe8f0,#fff0f5);color:#ed3d75;border-color:#ffd8e5}',
+                '.eah-tech{background:linear-gradient(145deg,#e2f0ff,#edf6ff);color:#1769de;border-color:#cfe5ff}',
+                '.eah-category strong,.eah-category small{color:#14213c}',
+                '.eah-panel{display:none;background:#fff;border:1px solid #dce6f6;border-radius:16px;overflow:hidden;box-shadow:0 7px 18px rgba(34,65,116,.07)}',
+                '.eah-panel.is-visible{display:block}',
+                '.eah-panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 15px;background:linear-gradient(100deg,#e8f2ff,#f1efff);border-bottom:1px solid #e0e8f5}',
+                '.eah-panel-head strong{font-size:15px;color:#172b4d}',
+                '.eah-panel-head small{display:block;margin-top:3px;color:#71819a;font-size:11px}',
+                '.eah-panel-close{width:30px;height:30px;border:0;border-radius:50%;background:#fff;color:#405571;font-size:20px;line-height:1}',
+                '.eah-faq-list{padding:7px 10px 10px;display:grid;gap:7px}',
+                '.eah-faq-item{border:1px solid #e1e9f5;border-radius:11px;overflow:hidden;background:#fff}',
+                '.eah-faq-question{width:100%;padding:11px 12px;border:0;background:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;color:#1b2d4a;font-size:12px;font-weight:750;line-height:1.35}',
+                '.eah-faq-question span:last-child{font-size:17px;color:#42628b;flex:0 0 auto}',
+                '.eah-faq-answer{display:none;padding:0 12px 12px;color:#536780;font-size:12px;line-height:1.55;white-space:pre-wrap}',
+                '.eah-faq-item.open .eah-faq-answer{display:block}',
+                '.eah-no-results{padding:16px;color:#63748c;font-size:12px;line-height:1.5}',
+                '.eah-support-card{padding:0;background:rgba(255,255,255,.82);border:1px solid #d8e5fb;border-radius:18px;box-shadow:0 7px 17px rgba(34,65,116,.07);overflow:hidden}',
+                '.eah-support-head{display:flex;align-items:center;gap:11px;padding:15px 15px 13px}',
+                '.eah-support-head-icon{width:42px;height:42px;border-radius:13px;background:#e7f0ff;color:#1e65d2;display:flex;align-items:center;justify-content:center;flex:0 0 42px}',
+                '.eah-support-head-icon svg{width:25px;height:25px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}',
+                '.eah-support-head strong{display:block;color:#172746;font-size:18px;line-height:1.2;font-weight:850}',
+                '.eah-support-head p{margin:4px 0 0;color:#65758d;font-size:12px;line-height:1.4}',
+                '.eah-support-actions{padding:0 10px 11px;display:grid;gap:9px}',
+                '.eah-support-action{width:100%;min-height:66px;padding:11px 13px;display:flex;align-items:center;gap:12px;border:1px solid #e0e7f5;border-radius:14px;text-align:left;text-decoration:none;color:#182a49;box-shadow:0 4px 9px rgba(34,65,116,.06);cursor:pointer;-webkit-tap-highlight-color:transparent}',
+                '.eah-support-action:active{transform:scale(.99)}',
+                '.eah-chat-action{background:linear-gradient(105deg,#f0eaff,#f6f2ff);border-color:#e3d8ff}',
+                '.eah-email-action{background:linear-gradient(105deg,#e8f2ff,#f2f7ff);border-color:#d4e4ff}',
+                '.eah-action-icon{width:39px;height:39px;flex:0 0 39px;border-radius:12px;background:rgba(255,255,255,.8);display:flex;align-items:center;justify-content:center;color:#7544e7}',
+                '.eah-email-action .eah-action-icon{color:#1767dc}',
+                '.eah-action-icon svg{width:25px;height:25px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}',
+                '.eah-action-copy{min-width:0;flex:1;display:grid;gap:3px}',
+                '.eah-action-copy strong{font-size:13px;line-height:1.25;color:#172746;font-weight:850}',
+                '.eah-action-copy small{font-size:11px;line-height:1.3;color:#6c7c92;overflow-wrap:anywhere}',
+                '.eah-action-arrow{flex:0 0 auto;color:#334a6b;font-size:22px;line-height:1}',
+                '@media(min-width:620px){.eah-hero{min-height:220px;padding:25px}.eah-hero-art svg{max-height:220px}.eah-categories{gap:12px}.eah-category{min-height:132px;padding:15px}.eah-category strong{font-size:14px}.eah-category small{font-size:12px}.eah-category-icon,.eah-category-icon svg{width:36px;height:36px}.eah-support-actions{padding:0 14px 14px}.eah-support-action{min-height:78px;padding:14px 17px}.eah-action-copy strong{font-size:15px}.eah-action-copy small{font-size:13px}}',
+                '@media(max-width:360px){body.examo-android-help-mode .content-area{padding-left:9px!important;padding-right:9px!important}.eah-category{min-height:105px;padding:9px 7px}.eah-category strong{font-size:11px}.eah-category small{font-size:9px}.eah-hero{padding:17px 13px}.eah-hero h1{font-size:22px}.eah-hero-copy{width:69%}.eah-hero-art{width:40%}}'
+              ].join('');
+              document.head.appendChild(style);
+
+              var fallbackFaqs = [
+                {question:'How to use this website?',answer:'Sign up and log in, open Jobs and click “Add to ExamForm” on the exam you want. It is added to Exam Forms, Exams, Preparation and Results automatically. Then open Exam Forms, fill the form on the official website and change its status from Pending to Filled.'},
+                {question:'How do I add an exam form?',answer:'Exam forms are added from the Jobs page. Open Jobs > Latest Jobs and click “Add to ExamForm” next to the exam.'},
+                {question:'How do I change my exam form status?',answer:'Go to Student > Exam Forms, fill the form using the Open link, then click Edit and change the status from Pending to Filled.'},
+                {question:'How to reset my password?',answer:'On the login page click “Forgot Password?”, enter your registered email and follow the verification steps.'},
+                {question:'What payment methods are accepted?',answer:'Paid plans support the payment methods shown on the Subscription page.'}
+              ];
+              window.__examoAndroidHelpAllFaqs = window.__examoAndroidHelpAllFaqs || fallbackFaqs.slice();
+              window.__examoAndroidHelpSearchFaqs = [];
+              window.__examoAndroidHelpQuery = '';
+              window.__examoAndroidHelpMode = '';
+              window.__examoAndroidHelpCategory = '';
+              window.__examoAndroidHelpCaptureRunning = false;
+              window.__examoAndroidHelpLastSignature = '';
+
+              function makeMarkup() {
+                return [
+                  '<section class="eah-hero">',
+                    '<div class="eah-hero-copy">',
+                      '<div class="eah-hero-kicker">Need Help?</div>',
+                      '<h1>We are Here for <em>You!</em></h1>',
+                      '<p>Get quick answers, step-by-step guides or contact our support team.</p>',
+                    '</div>',
+                    '<div class="eah-hero-art" aria-hidden="true">',
+                      '<svg viewBox="0 0 260 190" xmlns="http://www.w3.org/2000/svg">',
+                        '<defs><linearGradient id="eahHoodie" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#398cff"/><stop offset="1" stop-color="#0750c8"/></linearGradient><linearGradient id="eahLaptop" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#c8dcf7"/></linearGradient></defs>',
+                        '<circle cx="184" cy="84" r="70" fill="#d7e5ff" opacity=".7"/>',
+                        '<path d="M25 59 Q25 30 58 30 H91 Q111 30 111 50 Q111 71 89 71 H61 L45 84 L48 69 Q25 67 25 59Z" fill="#fff" stroke="#2670e5" stroke-width="3"/>',
+                        '<text x="68" y="62" text-anchor="middle" font-size="27" font-weight="800" fill="#2163d2">?</text>',
+                        '<path d="M121 188 Q119 143 140 121 Q158 108 197 111 Q233 115 246 157 L252 190Z" fill="url(#eahHoodie)"/>',
+                        '<path d="M154 126 Q172 145 195 128 L205 188 H143Z" fill="#0f5bd4"/>',
+                        '<path d="M176 111 Q174 126 186 130 Q198 125 198 111" fill="#f1a078"/>',
+                        '<ellipse cx="184" cy="75" rx="37" ry="43" fill="#f4b18b"/>',
+                        '<path d="M147 72 Q139 31 177 22 Q220 17 224 57 Q221 65 217 69 Q210 47 190 48 Q171 58 147 72Z" fill="#3c2928"/>',
+                        '<path d="M148 58 Q161 23 195 29 Q217 31 225 55 Q207 47 195 53 Q171 64 148 72Z" fill="#5b3730"/>',
+                        '<path d="M164 77 Q169 74 174 77 M196 77 Q201 74 207 77" stroke="#51302c" stroke-width="3" stroke-linecap="round"/>',
+                        '<circle cx="171" cy="84" r="3" fill="#243149"/><circle cx="200" cy="84" r="3" fill="#243149"/>',
+                        '<path d="M179 99 Q188 106 198 98" stroke="#b54d43" stroke-width="3" fill="none" stroke-linecap="round"/>',
+                        '<path d="M140 75 Q130 65 137 49 Q145 18 184 15 Q226 15 234 53 Q238 69 225 82" fill="none" stroke="#1665dd" stroke-width="9" stroke-linecap="round"/>',
+                        '<path d="M136 61 Q125 57 124 76 Q125 94 141 91 L145 83" fill="#2478eb" stroke="#1455bf" stroke-width="3"/>',
+                        '<path d="M231 62 Q244 58 247 76 Q246 94 230 91 L226 82" fill="#2478eb" stroke="#1455bf" stroke-width="3"/>',
+                        '<path d="M147 133 L162 153 L174 137 M206 133 L194 153 L182 137" fill="none" stroke="#b8d5ff" stroke-width="3"/>',
+                        '<path d="M155 147 L165 164 M199 147 L189 164" stroke="#eaf3ff" stroke-width="2"/>',
+                        '<rect x="27" y="139" width="133" height="45" rx="7" fill="url(#eahLaptop)" stroke="#91b7eb" stroke-width="2"/>',
+                        '<path d="M17 185 H170 L183 192 H5Z" fill="#9fb9d8"/>',
+                        '<rect x="77" y="153" width="30" height="22" rx="6" fill="#143c7d"/>',
+                        '<text x="92" y="169" text-anchor="middle" font-size="15" font-weight="800" fill="#fff">E</text>',
+                      '</svg>',
+                    '</div>',
+                  '</section>',
+                  '<form class="eah-search" role="search">',
+                    '<span class="eah-search-icon"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10.8" cy="10.8" r="7.2"/><path d="m16.2 16.2 4.2 4.2"/></svg></span>',
+                    '<input class="eah-search-input" type="search" placeholder="Search for help, guides or issues..." aria-label="Search help">',
+                    '<button type="submit" aria-label="Search"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10.8" cy="10.8" r="7.2"/><path d="m16.2 16.2 4.2 4.2"/></svg></button>',
+                  '</form>',
+                  '<div class="eah-section-title">Quick Help</div>',
+                  '<section class="eah-categories" aria-label="Help categories">',
+                    '<button type="button" class="eah-category eah-user" data-category="User Guide"><span class="eah-category-icon"><svg viewBox="0 0 24 24"><path d="M3 5.5c3.2-1.4 6.2-.9 9 1.2v14c-2.8-2.1-5.8-2.6-9-1.2z"/><path d="M21 5.5c-3.2-1.4-6.2-.9-9 1.2v14c2.8-2.1 5.8-2.6 9-1.2z"/><path d="M6 9h3M6 12h3M15 9h3M15 12h3"/></svg></span><strong>User Guide</strong><small>Learn how to use Examo</small></button>',
+                    '<button type="button" class="eah-category eah-account" data-category="Account Help"><span class="eah-category-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2.5"/><path d="M5.5 17c.7-2 2-3 3.5-3s2.8 1 3.5 3M15 9h3M15 13h3M15 17h3"/></svg></span><strong>Account Help</strong><small>Login, profile &amp; account issues</small></button>',
+                    '<button type="button" class="eah-category eah-exam" data-category="Exam Forms"><span class="eah-category-icon"><svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h9"/><path d="M14 3v5h5M9 12h6M9 16h3"/><path d="m15.5 17.5 5-5 2 2-5 5-3 1z"/></svg></span><strong>Exam Forms</strong><small>Add, edit &amp; manage exam forms</small></button>',
+                    '<button type="button" class="eah-category eah-jobs" data-category="Jobs &amp; Updates"><span class="eah-category-icon"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18M10 12v2h4v-2"/></svg></span><strong>Jobs &amp; Updates</strong><small>Jobs, admit card &amp; results</small></button>',
+                    '<button type="button" class="eah-category eah-docs" data-category="Documents"><span class="eah-category-icon"><svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg></span><strong>Documents</strong><small>Upload &amp; manage your documents</small></button>',
+                    '<button type="button" class="eah-category eah-tech" data-category="Technical Support"><span class="eah-category-icon"><svg viewBox="0 0 24 24"><path d="M12 8.2a3.8 3.8 0 1 0 0 7.6 3.8 3.8 0 0 0 0-7.6Z"/><path d="m19.4 13.4 1.1.9-1.5 2.6-1.4-.5a7.8 7.8 0 0 1-1.5.9l-.2 1.5h-3l-.3-1.5a7.8 7.8 0 0 1-1.5-.9l-1.4.5-1.5-2.6 1.1-.9a7.4 7.4 0 0 1 0-1.8l-1.1-.9 1.5-2.6 1.4.5a7.8 7.8 0 0 1 1.5-.9l.3-1.5h3l.2 1.5a7.8 7.8 0 0 1 1.5.9l1.4-.5 1.5 2.6-1.1.9a7.4 7.4 0 0 1 0 1.8Z"/></svg></span><strong>Technical Support</strong><small>App, website &amp; other issues</small></button>',
+                  '</section>',
+                  '<section class="eah-panel" aria-live="polite"><div class="eah-panel-head"><div><strong class="eah-panel-title">Help articles</strong><small class="eah-panel-subtitle"></small></div><button type="button" class="eah-panel-close" aria-label="Close">×</button></div><div class="eah-faq-list"></div></section>',
+                  '<section class="eah-support-card">',
+                    '<div class="eah-support-head"><span class="eah-support-head-icon"><svg viewBox="0 0 24 24"><path d="M4 13v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="12" width="4" height="7" rx="2"/><rect x="17" y="12" width="4" height="7" rx="2"/><path d="M19 19c0 2-2 3-5 3h-1"/></svg></span><div><strong>Contact Support</strong><p>Send us your question and our support team will get back to you.</p></div></div>',
+                    '<div class="eah-support-actions">',
+                      '<button type="button" class="eah-support-action eah-chat-action"><span class="eah-action-icon"><svg viewBox="0 0 24 24"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H6l-3 2v-5.5A7.5 7.5 0 1 1 20 11.5Z"/></svg></span><span class="eah-action-copy"><strong>Chat with Examo Assistant</strong><small>Instant answers, available 24/7</small></span><span class="eah-action-arrow">›</span></button>',
+                      '<a class="eah-support-action eah-email-action" href="mailto:examoaspirant@gmail.com?subject=Examo%20Support"><span class="eah-action-icon"><svg viewBox="0 0 24 24"><rect x="2.5" y="4.5" width="19" height="15" rx="2"/><path d="m3.5 6 8.5 7 8.5-7"/></svg></span><span class="eah-action-copy"><strong>Email Support</strong><small>examoaspirant@gmail.com</small></span><span class="eah-action-arrow">›</span></a>',
+                    '</div>',
+                  '</section>'
+                ].join('');
+              }
+
+              var categoryRules = {
+                'User Guide': /website|dashboard|student profile|subject|schedule|preparation|how to use|what is examo|create account|features/i,
+                'Account Help': /login|log in|password|account|otp|email|mobile|sign up|sign in|profile/i,
+                'Exam Forms': /exam form|examform|form status|add an exam|manual|delete.*form|edit.*form|change.*status|fill.*form/i,
+                'Jobs & Updates': /job|admit card|result|exam date|job alert|latest vacancy|recruitment/i,
+                'Documents': /document|upload|file|pdf|photo|signature|certificate/i,
+                'Technical Support': /technical|can't log|cannot log|error|issue|crash|loading|not working|failed|failing|bug|problem/i
+              };
+
+              function normaliseFaq(item) {
+                return {
+                  question: String(item.question || item.Question || '').trim(),
+                  answer: String(item.answer || item.Answer || item.content || '').trim()
+                };
+              }
+
+              function renderPanel(title, subtitle, items, emptyText) {
+                var root = document.getElementById('examo-android-help-redesign');
+                if (!root) return;
+                var panel = root.querySelector('.eah-panel');
+                var list = panel.querySelector('.eah-faq-list');
+                panel.querySelector('.eah-panel-title').textContent = title;
+                panel.querySelector('.eah-panel-subtitle').textContent = subtitle || '';
+                list.innerHTML = '';
+                panel.classList.add('is-visible');
+                if (!items || !items.length) {
+                  var empty = document.createElement('div');
+                  empty.className = 'eah-no-results';
+                  empty.textContent = emptyText || 'No matching help articles found. Try another search or chat with Examo Assistant.';
+                  list.appendChild(empty);
+                  return;
+                }
+                items.forEach(function (raw) {
+                  var item = normaliseFaq(raw);
+                  if (!item.question) return;
+                  var wrap = document.createElement('article');
+                  wrap.className = 'eah-faq-item';
+                  var question = document.createElement('button');
+                  question.type = 'button';
+                  question.className = 'eah-faq-question';
+                  var label = document.createElement('span');
+                  label.textContent = item.question;
+                  var chevron = document.createElement('span');
+                  chevron.textContent = '⌄';
+                  question.appendChild(label);
+                  question.appendChild(chevron);
+                  var answer = document.createElement('div');
+                  answer.className = 'eah-faq-answer';
+                  answer.textContent = item.answer || 'For more help with this topic, chat with Examo Assistant or contact our support team.';
+                  question.addEventListener('click', function () {
+                    var willOpen = !wrap.classList.contains('open');
+                    Array.prototype.forEach.call(list.querySelectorAll('.eah-faq-item.open'), function (node) {
+                      node.classList.remove('open');
+                    });
+                    if (willOpen) wrap.classList.add('open');
+                  });
+                  wrap.appendChild(question);
+                  wrap.appendChild(answer);
+                  list.appendChild(wrap);
+                });
+              }
+
+              function syncOriginalSearch(query) {
+                var originalInput = document.querySelector('.hs-search input');
+                if (!originalInput) return;
+                var setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                setter.call(originalInput, query);
+                originalInput.dispatchEvent(new Event('input', {bubbles:true}));
+              }
+
+              function openCategory(name) {
+                window.__examoAndroidHelpMode = 'category';
+                window.__examoAndroidHelpCategory = name;
+                window.__examoAndroidHelpQuery = '';
+                var input = document.querySelector('.eah-search-input');
+                if (input) input.value = '';
+                syncOriginalSearch('');
+                var regex = categoryRules[name] || /./;
+                var matches = (window.__examoAndroidHelpAllFaqs || fallbackFaqs).filter(function (raw) {
+                  var faq = normaliseFaq(raw);
+                  return regex.test(faq.question + ' ' + faq.answer);
+                });
+                renderPanel(name + ' – FAQs', 'Questions related to ' + name + '.', matches,
+                  'No FAQs are available in this category yet. Try Search or chat with Examo Assistant.');
+                var panel = document.querySelector('#examo-android-help-redesign .eah-panel');
+                if (panel) panel.scrollIntoView({behavior:'smooth', block:'nearest'});
+                window.setTimeout(queueFaqCapture, 500);
+              }
+
+              function searchHelp(value) {
+                var query = String(value || '').trim();
+                window.__examoAndroidHelpMode = query ? 'search' : '';
+                window.__examoAndroidHelpQuery = query;
+                window.__examoAndroidHelpSearchFaqs = query
+                  ? (window.__examoAndroidHelpAllFaqs || fallbackFaqs).filter(function (raw) {
+                      var faq = normaliseFaq(raw);
+                      return (faq.question + ' ' + faq.answer).toLowerCase().indexOf(query.toLowerCase()) >= 0;
+                    })
+                  : [];
+                syncOriginalSearch(query);
+                if (!query) {
+                  var panel = document.querySelector('#examo-android-help-redesign .eah-panel');
+                  if (panel) panel.classList.remove('is-visible');
+                  return;
+                }
+                renderPanel('Search results', 'Answers matching “' + query + '”.', window.__examoAndroidHelpSearchFaqs,
+                  'No matching help articles found. Try another keyword or chat with Examo Assistant.');
+                window.setTimeout(queueFaqCapture, 650);
+              }
+
+              async function captureFaqs() {
+                if (window.__examoAndroidHelpCaptureRunning) return;
+                var buttons = Array.prototype.slice.call(document.querySelectorAll('.hs-accordion .hs-acc-head'));
+                if (!buttons.length) return;
+                window.__examoAndroidHelpCaptureRunning = true;
+                var originalOpen = document.querySelector('.hs-accordion .hs-acc-item.open .hs-acc-head');
+                var originalQuestion = originalOpen ? (originalOpen.querySelector('span') || originalOpen).innerText.trim() : '';
+                var collected = [];
+                try {
+                  for (var i = 0; i < buttons.length; i++) {
+                    var questionText = (buttons[i].querySelector('span') || buttons[i]).innerText.trim();
+                    if (!questionText) continue;
+                    var current = Array.prototype.slice.call(document.querySelectorAll('.hs-accordion .hs-acc-head')).find(function (b) {
+                      return (b.querySelector('span') || b).innerText.trim() === questionText;
+                    });
+                    if (!current) continue;
+                    var currentItem = current.closest('.hs-acc-item');
+                    if (!currentItem || !currentItem.querySelector('.hs-acc-body')) {
+                      current.click();
+                      await new Promise(function (resolve) { window.setTimeout(resolve, 85); });
+                    }
+                    current = Array.prototype.slice.call(document.querySelectorAll('.hs-accordion .hs-acc-head')).find(function (b) {
+                      return (b.querySelector('span') || b).innerText.trim() === questionText;
+                    });
+                    currentItem = current ? current.closest('.hs-acc-item') : null;
+                    var answerNode = currentItem ? currentItem.querySelector('.hs-acc-body') : null;
+                    collected.push({question:questionText,answer:answerNode ? answerNode.innerText.trim() : ''});
+                  }
+                  if (originalQuestion) {
+                    var restore = Array.prototype.slice.call(document.querySelectorAll('.hs-accordion .hs-acc-head')).find(function (b) {
+                      return (b.querySelector('span') || b).innerText.trim() === originalQuestion;
+                    });
+                    if (restore && !restore.closest('.hs-acc-item').classList.contains('open')) restore.click();
+                  }
+                } finally {
+                  if (window.__examoAndroidHelpQuery) {
+                    window.__examoAndroidHelpSearchFaqs = collected;
+                  } else {
+                    window.__examoAndroidHelpAllFaqs = collected.length ? collected : fallbackFaqs.slice();
+                  }
+                  window.__examoAndroidHelpCaptureRunning = false;
+                  refreshPanelAfterCapture();
+                }
+              }
+
+              function refreshPanelAfterCapture() {
+                var mode = window.__examoAndroidHelpMode;
+                if (!mode) return;
+                if (mode === 'category') {
+                  var name = window.__examoAndroidHelpCategory;
+                  var regex = categoryRules[name] || /./;
+                  var matches = (window.__examoAndroidHelpAllFaqs || fallbackFaqs).filter(function (raw) {
+                    var faq = normaliseFaq(raw);
+                    return regex.test(faq.question + ' ' + faq.answer);
+                  });
+                  renderPanel(name + ' – FAQs', 'Questions related to ' + name + '.', matches,
+                    'No FAQs are available in this category yet. Try Search or chat with Examo Assistant.');
+                } else if (mode === 'search') {
+                  var query = window.__examoAndroidHelpQuery || '';
+                  var matches = (window.__examoAndroidHelpSearchFaqs || []).filter(function (raw) {
+                    var faq = normaliseFaq(raw);
+                    return (faq.question + ' ' + faq.answer).toLowerCase().indexOf(query.toLowerCase()) >= 0;
+                  });
+                  renderPanel('Search results', 'Answers matching “' + query + '”.', matches,
+                    'No matching help articles found. Try another keyword or chat with Examo Assistant.');
+                }
+              }
+
+              var captureTimer = null;
+              function queueFaqCapture() {
+                if (window.__examoAndroidHelpCaptureRunning) return;
+                window.clearTimeout(captureTimer);
+                captureTimer = window.setTimeout(captureFaqs, 450);
+              }
+
+              function installScreen(page) {
+                if (!page) return;
+                document.body.classList.add('examo-android-help-mode');
+                var crumb = document.querySelector('.topbar .breadcrumb strong');
+                if (crumb) crumb.textContent = 'Help & Support';
+                page.style.display = 'block';
+                page.style.width = '100%';
+                page.style.maxWidth = '100%';
+                page.style.margin = '0';
+                var main = page.querySelector('.hs-main');
+                var side = page.querySelector('.hs-side');
+                if (main) main.style.display = 'none';
+                if (side) side.style.display = 'none';
+
+                if (!document.getElementById('examo-android-help-redesign')) {
+                  var root = document.createElement('div');
+                  root.id = 'examo-android-help-redesign';
+                  root.innerHTML = makeMarkup();
+                  page.insertAdjacentElement('afterend', root);
+                  var searchForm = root.querySelector('.eah-search');
+                  var searchInput = root.querySelector('.eah-search-input');
+                  searchForm.addEventListener('submit', function (event) {
+                    event.preventDefault();
+                    searchHelp(searchInput.value);
+                  });
+                  searchInput.addEventListener('input', function () {
+                    searchHelp(searchInput.value);
+                  });
+                  root.querySelectorAll('.eah-category').forEach(function (button) {
+                    button.addEventListener('click', function () {
+                      openCategory(button.getAttribute('data-category'));
+                    });
+                  });
+                  root.querySelector('.eah-panel-close').addEventListener('click', function () {
+                    root.querySelector('.eah-panel').classList.remove('is-visible');
+                    window.__examoAndroidHelpMode = '';
+                    window.__examoAndroidHelpCategory = '';
+                    window.__examoAndroidHelpQuery = '';
+                    searchInput.value = '';
+                    syncOriginalSearch('');
+                  });
+                  root.querySelector('.eah-chat-action').addEventListener('click', function () {
+                    var button = document.querySelector('.hs-side .hs-chat-open');
+                    if (button) button.click();
+                  });
+                  window.setTimeout(queueFaqCapture, 900);
+                }
+              }
+
+              function removeScreen() {
+                var root = document.getElementById('examo-android-help-redesign');
+                if (root) root.remove();
+                document.body.classList.remove('examo-android-help-mode');
+                var page = document.querySelector('.hs-page');
+                if (page) {
+                  page.style.display = '';
+                  page.style.width = '';
+                  page.style.maxWidth = '';
+                  page.style.margin = '';
+                  var main = page.querySelector('.hs-main');
+                  var side = page.querySelector('.hs-side');
+                  if (main) main.style.display = '';
+                  if (side) side.style.display = '';
+                }
+              }
+
+              function apply() {
+                var page = document.querySelector('.hs-page');
+                var helpHero = page ? page.querySelector('.hs-hero') : null;
+                if (page && helpHero) {
+                  installScreen(page);
+                } else {
+                  removeScreen();
+                }
+              }
+
+              window.__examoApplyAndroidHelp = apply;
+              apply();
+
+              var observer = new MutationObserver(function () {
+                apply();
+                var faqHeadings = document.querySelectorAll('.hs-accordion .hs-acc-head');
+                var signature = Array.prototype.map.call(faqHeadings, function (b) {
+                  return (b.querySelector('span') || b).innerText.trim();
+                }).join('|');
+                if (signature && signature !== window.__examoAndroidHelpLastSignature && !window.__examoAndroidHelpCaptureRunning) {
+                  window.__examoAndroidHelpLastSignature = signature;
+                  queueFaqCapture();
+                }
+              });
+              observer.observe(document.body, {childList:true,subtree:true});
+            })();
+        """.trimIndent()
+
+        view.evaluateJavascript(script, null)
     }
 
     private fun installLoginSwipeBorder(view: WebView?) {
