@@ -531,8 +531,14 @@ class MainActivity : Activity() {
                 'body.examo-android-help-mode .topbar .breadcrumb strong{font-size:14px!important}',
                 '#examo-android-help-redesign{width:100%;max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:14px;color:#14213c;font-family:inherit}',
                 '#examo-android-help-redesign *{box-sizing:border-box}',
-                '.eah-hero{width:100%;overflow:hidden;border-radius:19px;border:1px solid #d8e4fb;background:#e9efff;box-shadow:0 7px 16px rgba(33,75,141,.09);line-height:0}',
+                '.eah-hero{width:100%;overflow:hidden;border-radius:19px;border:1px solid #d8e4fb;background:#e9efff;box-shadow:0 7px 16px rgba(33,75,141,.09);line-height:0;min-height:0}',
                 '.eah-hero img{display:block;width:100%;height:auto;aspect-ratio:3/1;object-fit:cover}',
+                '.eah-hero-fallback{min-height:148px;background:linear-gradient(110deg,#dceaff 0%,#e3e7ff 60%,#eee6ff 100%);line-height:normal;display:flex;align-items:center;padding:20px 17px}',
+                '.eah-hero-fallback-content{max-width:78%;color:#12264a}',
+                '.eah-hero-fallback-content small{display:block;color:#1762cf;font-size:12px;font-weight:850;letter-spacing:.08em;margin-bottom:7px}',
+                '.eah-hero-fallback-content strong{display:block;font-size:23px;line-height:1.1;font-weight:850}',
+                '.eah-hero-fallback-content strong em{font-style:normal;color:#1765dc}',
+                '.eah-hero-fallback-content p{margin:9px 0 0;color:#435a7b;font-size:13px;line-height:1.4}',
                 '.eah-section-title{margin:2px 2px -5px;color:#14284b;font-weight:850;font-size:20px;line-height:1.2;display:flex;align-items:center;gap:9px}',
                 '.eah-section-title:before{content:"";width:4px;height:23px;border-radius:8px;background:#2469df;display:block}',
                 '.eah-categories{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}',
@@ -601,7 +607,7 @@ class MainActivity : Activity() {
 
               function makeMarkup() {
                 return [
-                  '<section class="eah-hero"><img src=__EXAMO_HELP_BANNER_SRC__ alt="Need Help? We are here for you."></section>',
+                  '<section class="eah-hero"><img class="eah-hero-image" alt="Need Help? We are here for you."></section>',
                   '<div class="eah-section-title">Quick Help</div>',
                   '<section class="eah-categories" aria-label="Help categories">',
                     '<button type="button" class="eah-category eah-user" data-category="User Guide"><span class="eah-category-icon"><svg viewBox="0 0 24 24"><path d="M3 5.5c3.2-1.4 6.2-.9 9 1.2v14c-2.8-2.1-5.8-2.6-9-1.2z"/><path d="M21 5.5c-3.2-1.4-6.2-.9-9 1.2v14c2.8-2.1 5.8-2.6 9-1.2z"/><path d="M6 9h3M6 12h3M15 9h3M15 12h3"/></svg></span><strong>User Guide</strong><small>Learn how to use Examo</small></button>',
@@ -834,6 +840,7 @@ class MainActivity : Activity() {
                 page.style.width = '100%';
                 page.style.maxWidth = '100%';
                 page.style.margin = '0';
+                window.__examoAndroidHelpStyledPage = page;
                 var main = page.querySelector('.hs-main');
                 var side = page.querySelector('.hs-side');
                 if (main) main.style.display = 'none';
@@ -844,6 +851,18 @@ class MainActivity : Activity() {
                   root.id = 'examo-android-help-redesign';
                   root.innerHTML = makeMarkup();
                   page.insertAdjacentElement('afterend', root);
+
+                  var bannerImage = root.querySelector('.eah-hero-image');
+                  if (bannerImage) {
+                    bannerImage.onerror = function () {
+                      var hero = root.querySelector('.eah-hero');
+                      if (!hero) return;
+                      hero.classList.add('eah-hero-fallback');
+                      hero.innerHTML = '<div class="eah-hero-fallback-content"><small>NEED HELP?</small><strong>We are Here for <em>You!</em></strong><p>Get quick answers, step-by-step guides or contact our support team.</p></div>';
+                    };
+                    bannerImage.src = __EXAMO_HELP_BANNER_SRC__;
+                  }
+
                   root.querySelectorAll('.eah-category').forEach(function (button) {
                     button.addEventListener('click', function () {
                       openCategory(button.getAttribute('data-category'));
@@ -863,25 +882,32 @@ class MainActivity : Activity() {
 
               function removeScreen() {
                 var root = document.getElementById('examo-android-help-redesign');
+                var page = window.__examoAndroidHelpStyledPage || null;
                 if (root) root.remove();
-                document.body.classList.remove('examo-android-help-mode');
-                var page = document.querySelector('.hs-page');
-                if (page) {
-                  page.style.display = '';
-                  page.style.width = '';
-                  page.style.maxWidth = '';
-                  page.style.margin = '';
-                  var main = page.querySelector('.hs-main');
-                  var side = page.querySelector('.hs-side');
-                  if (main) main.style.display = '';
-                  if (side) side.style.display = '';
+                if (root || document.body.classList.contains('examo-android-help-mode')) {
+                  document.body.classList.remove('examo-android-help-mode');
+                  if (page && page.isConnected) {
+                    page.style.display = '';
+                    page.style.width = '';
+                    page.style.maxWidth = '';
+                    page.style.margin = '';
+                    var main = page.querySelector('.hs-main');
+                    var side = page.querySelector('.hs-side');
+                    if (main) main.style.display = '';
+                    if (side) side.style.display = '';
+                  }
+                  window.__examoAndroidHelpStyledPage = null;
                 }
               }
 
               function apply() {
                 var page = document.querySelector('.hs-page');
                 var helpHero = page ? page.querySelector('.hs-hero') : null;
-                if (page && helpHero) {
+                var helpCategoryCards = page ? page.querySelector('.hs-card-grid') : null;
+                var helpFaqAccordion = page ? page.querySelector('.hs-accordion') : null;
+                // Only the Help page has the Featured FAQ cards and FAQ accordion.
+                // Subscription shares .hs-page/.hs-hero styles, so never transform it.
+                if (page && helpHero && helpCategoryCards && helpFaqAccordion) {
                   installScreen(page);
                 } else {
                   removeScreen();
@@ -907,11 +933,21 @@ class MainActivity : Activity() {
         """.trimIndent()
 
         val bannerDataUrl = runCatching {
-            val bytes = resources.openRawResource(R.drawable.examo_help_banner).use { it.readBytes() }
-            "data:image/webp;base64," + android.util.Base64.encodeToString(
-                bytes,
+            val bitmap = android.graphics.BitmapFactory.decodeResource(
+                resources,
+                R.drawable.examo_help_banner
+            ) ?: throw IllegalStateException("Help banner drawable could not be decoded")
+            val pngBytes = java.io.ByteArrayOutputStream().use { output ->
+                bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, output)
+                output.toByteArray()
+            }
+            bitmap.recycle()
+            "data:image/png;base64," + android.util.Base64.encodeToString(
+                pngBytes,
                 android.util.Base64.NO_WRAP
             )
+        }.onFailure { error ->
+            android.util.Log.e("ExamoHelp", "Unable to prepare Help banner image", error)
         }.getOrDefault("")
 
         // Inject the bundled drawable as a data URI. WebView cannot reliably
