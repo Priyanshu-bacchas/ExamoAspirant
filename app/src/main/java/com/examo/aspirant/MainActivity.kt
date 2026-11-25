@@ -83,25 +83,37 @@ class MainActivity : Activity() {
         window.navigationBarColor = Color.rgb(17, 24, 39)
         window.decorView.systemUiVisibility = android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
 
+        // Check pending login BEFORE building the welcome/login layers.
+        // If Android killed this Activity while Gmail was open, the OTP WebView
+        // must be foreground-visible from the first frame (not hidden below splash).
+        val pendingAtLaunch = getPendingLoginOtp()
+        authSheetOpen = pendingAtLaunch != null
+
         root = FrameLayout(this).apply { setBackgroundColor(Color.WHITE) }
 
-        // Keep the welcome screen as the permanent background layer.
+        // Keep the welcome screen underneath the WebView for normal launches.
         val splash = ExamoSplashView(this)
         splashSheet = splash
         root.addView(splash, FrameLayout.LayoutParams(-1, -1))
 
-        // The login/signup WebView is a separate sheet above the welcome screen.
-        // It stays laid out and loaded, but starts just below the visible screen.
         webView = createWebView()
-        webView.visibility = View.INVISIBLE
+        webView.visibility = if (pendingAtLaunch != null) View.VISIBLE else View.INVISIBLE
+        webView.translationY = 0f
         root.addView(webView, FrameLayout.LayoutParams(-1, -1))
         setContentView(root)
 
         root.post {
-            webView.translationY = root.height.toFloat()
+            if (pendingAtLaunch != null) {
+                // Keep the pending OTP page in front. Never run the default
+                // "hide WebView below welcome screen" animation for this launch.
+                webView.visibility = View.VISIBLE
+                webView.translationY = 0f
+                authSheetOpen = true
+            } else {
+                webView.translationY = root.height.toFloat()
+            }
         }
 
-        val pendingAtLaunch = getPendingLoginOtp()
         val savedExamoUrl = authRecoveryPrefs.getString("last_examo_url", null)
         val launchUrl = if (pendingAtLaunch != null && isExamoWebsiteUrl(savedExamoUrl)) {
             savedExamoUrl!!
@@ -691,8 +703,11 @@ class MainActivity : Activity() {
             .orEmpty()
         val startedAt = authRecoveryPrefs.getLong("login_otp_started_at", 0L)
 
+        // Keep the verification page until the user explicitly restarts or
+        // the login succeeds. The backend enforces the OTP's 10-minute validity;
+        // local UI recovery must not discard the page while Gmail is open.
         if (email.isBlank() || startedAt <= 0L ||
-            System.currentTimeMillis() - startedAt > 10 * 60 * 1000L
+            System.currentTimeMillis() - startedAt > 24 * 60 * 60 * 1000L
         ) {
             clearSavedLoginOtp()
             return null
@@ -2127,10 +2142,15 @@ class MainActivity : Activity() {
         if (::webView.isInitialized) {
             webView.onResume()
 
-            // WebView.restoreState() does not guarantee a fresh onPageFinished
-            // callback. Re-check the saved OTP step whenever Gmail returns focus.
+            // A pending OTP flow always wins over the welcome screen, including
+            // when the Android task was recreated while Gmail was foregrounded.
             if (getPendingLoginOtp() != null) {
-                val retryDelays = longArrayOf(350L, 1000L, 2200L)
+                webView.animate().cancel()
+                webView.visibility = View.VISIBLE
+                webView.translationY = 0f
+                authSheetOpen = true
+
+                val retryDelays = longArrayOf(150L, 500L, 1200L, 2500L, 4000L)
                 retryDelays.forEach { delay ->
                     webView.postDelayed({
                         if (!isFinishing && !isDestroyed &&
@@ -2141,6 +2161,22 @@ class MainActivity : Activity() {
                     }, delay)
                 }
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        if (::webView.isInitialized && getPendingLoginOtp() != null) {
+            webView.animate().cancel()
+            webView.visibility = View.VISIBLE
+            webView.translationY = 0f
+            authSheetOpen = true
+            webView.postDelayed({
+                if (!isFinishing && !isDestroyed && getPendingLoginOtp() != null) {
+                    restorePendingLoginOtpIfNeeded(webView, webView.url)
+                }
+            }, 150L)
         }
     }
 
@@ -2155,11 +2191,16 @@ class MainActivity : Activity() {
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus && ::webView.isInitialized && getPendingLoginOtp() != null) {
+            webView.animate().cancel()
+            webView.visibility = View.VISIBLE
+            webView.translationY = 0f
+            authSheetOpen = true
+
             webView.postDelayed({
                 if (!isFinishing && !isDestroyed && getPendingLoginOtp() != null) {
                     restorePendingLoginOtpIfNeeded(webView, webView.url)
                 }
-            }, 250L)
+            }, 150L)
         }
     }
 
