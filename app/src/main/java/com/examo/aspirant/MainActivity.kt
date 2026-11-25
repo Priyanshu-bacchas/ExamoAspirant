@@ -60,7 +60,8 @@ class MainActivity : Activity() {
     private data class PendingLoginOtp(
         val email: String,
         val remember: Boolean,
-        val startedAt: Long
+        val startedAt: Long,
+        val apiBaseUrl: String
     )
 
     private data class VerifiedLoginSession(
@@ -207,9 +208,24 @@ class MainActivity : Activity() {
 
             addJavascriptInterface(object {
                 @JavascriptInterface
-                fun savePendingLoginOtp(email: String?, remember: Boolean) {
+                fun savePendingLoginOtp(
+                    email: String?,
+                    remember: Boolean,
+                    apiBaseUrl: String?
+                ) {
                     val normalizedEmail = email?.trim()?.lowercase().orEmpty()
                     if (normalizedEmail.isBlank() || !normalizedEmail.contains("@")) return
+
+                    val candidateApiBase = apiBaseUrl?.trim()?.trimEnd('/').orEmpty()
+                    val parsedApiBase = Uri.parse(candidateApiBase)
+                    val safeApiBase = if (
+                        parsedApiBase.scheme.equals("https", ignoreCase = true) &&
+                        !parsedApiBase.host.isNullOrBlank()
+                    ) {
+                        candidateApiBase
+                    } else {
+                        getString(R.string.examo_api_url).trimEnd('/')
+                    }
 
                     val oldEmail = authRecoveryPrefs.getString("login_otp_email", null)
                     val oldStartedAt = authRecoveryPrefs.getLong("login_otp_started_at", 0L)
@@ -219,10 +235,11 @@ class MainActivity : Activity() {
                         System.currentTimeMillis()
                     }
 
-                    // Commit synchronously: Android may kill the background
-                    // Activity while Gmail is in the foreground.
+                    // Persist the exact API host used by the login request.
+                    // The WebView build can have a different API base from the APK resource.
                     authRecoveryPrefs.edit()
                         .putString("login_otp_email", normalizedEmail)
+                        .putString("login_otp_api_base", safeApiBase)
                         .putBoolean("login_otp_remember", remember)
                         .putLong("login_otp_started_at", startedAt)
                         .commit()
@@ -511,13 +528,31 @@ class MainActivity : Activity() {
                   var isLoginRequest = String(requestUrl).toLowerCase().indexOf('/auth/login') !== -1;
                   var rememberInput = document.querySelector('form.ex-form input[type="checkbox"]');
                   var remember = rememberInput ? !!rememberInput.checked : true;
+                  var loginApiBaseUrl = '';
+
+                  if (isLoginRequest) {
+                    try {
+                      var absoluteLoginUrl = new URL(String(requestUrl), window.location.href);
+                      var loginPath = absoluteLoginUrl.pathname.replace(/\\/+$/, '');
+                      var loginSuffix = loginPath.toLowerCase().lastIndexOf('/auth/login');
+                      if (loginSuffix >= 0) {
+                        loginApiBaseUrl =
+                          absoluteLoginUrl.origin + loginPath.substring(0, loginSuffix);
+                        window.__examoApiBaseUrl = loginApiBaseUrl;
+                      }
+                    } catch (urlError) {}
+                  }
 
                   return originalFetch(input, init).then(function (response) {
                     if (isLoginRequest && response.status === 403) {
                       response.clone().json().then(function (data) {
                         if (data && data.code === 'LOGIN_OTP_REQUIRED' &&
                             data.email && window.ExamoAuthBridge) {
-                          window.ExamoAuthBridge.savePendingLoginOtp(data.email, remember);
+                          window.ExamoAuthBridge.savePendingLoginOtp(
+                            data.email,
+                            remember,
+                            loginApiBaseUrl
+                          );
                         }
                       }).catch(function () {});
                     }
@@ -541,7 +576,11 @@ class MainActivity : Activity() {
                     var remember = rememberInput ? !!rememberInput.checked : true;
 
                     if (email && window.ExamoAuthBridge) {
-                      window.ExamoAuthBridge.savePendingLoginOtp(email, remember);
+                      window.ExamoAuthBridge.savePendingLoginOtp(
+                        email,
+                        remember,
+                        window.__examoApiBaseUrl || ''
+                      );
                     }
                     return;
                   }
@@ -584,16 +623,28 @@ class MainActivity : Activity() {
             return null
         }
 
+        val apiBaseUrl = authRecoveryPrefs.getString("login_otp_api_base", null)
+            ?.trim()
+            ?.trimEnd('/')
+            ?.takeIf { candidate ->
+                val parsed = Uri.parse(candidate)
+                parsed.scheme.equals("https", ignoreCase = true) &&
+                    !parsed.host.isNullOrBlank()
+            }
+            ?: getString(R.string.examo_api_url).trimEnd('/')
+
         return PendingLoginOtp(
             email = email,
             remember = authRecoveryPrefs.getBoolean("login_otp_remember", true),
-            startedAt = startedAt
+            startedAt = startedAt,
+            apiBaseUrl = apiBaseUrl
         )
     }
 
     private fun clearSavedLoginOtp() {
         authRecoveryPrefs.edit()
             .remove("login_otp_email")
+            .remove("login_otp_api_base")
             .remove("login_otp_remember")
             .remove("login_otp_started_at")
             .apply()
@@ -830,8 +881,14 @@ class MainActivity : Activity() {
 
         activityScope.launch {
             try {
+                val webViewUserAgent = webView.settings.userAgentString
                 val session = withContext(Dispatchers.IO) {
-                    requestLoginOtpVerification(pending.email, code)
+                    requestLoginOtpVerification(
+                        pending.email,
+                        code,
+                        pending.apiBaseUrl,
+                        webViewUserAgent
+                    )
                 }
 
                 if (getPendingLoginOtp() == null) {
@@ -875,8 +932,13 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun requestLoginOtpVerification(email: String, otp: String): VerifiedLoginSession {
-        val endpoint = "${getString(R.string.examo_api_url).trimEnd('/')}/Auth/verify-login-otp"
+    private fun requestLoginOtpVerification(
+        email: String,
+        otp: String,
+        apiBaseUrl: String,
+        userAgent: String
+    ): VerifiedLoginSession {
+        val endpoint = "${apiBaseUrl.trimEnd('/')}/Auth/verify-login-otp"
         val connection = URL(endpoint).openConnection() as HttpURLConnection
 
         try {
@@ -886,11 +948,12 @@ class MainActivity : Activity() {
             connection.instanceFollowRedirects = true
             connection.doOutput = true
             connection.useCaches = false
-            connection.setRequestProperty("Accept", "application/json")
-            connection.setRequestProperty("Accept-Encoding", "identity")
+            connection.setRequestProperty("Accept", "application/json, text/plain, */*")
+            connection.setRequestProperty("Origin", getString(R.string.examo_website_url).trimEnd('/'))
+            connection.setRequestProperty("Referer", getString(R.string.examo_website_url))
             connection.setRequestProperty("Cache-Control", "no-cache")
             connection.setRequestProperty("Content-Type", "application/json; charset=utf-8")
-            connection.setRequestProperty("User-Agent", "ExamoAspirant-Android")
+            connection.setRequestProperty("User-Agent", userAgent)
 
             val payload = JSONObject()
                 .put("email", email)
@@ -917,8 +980,14 @@ class MainActivity : Activity() {
                 .orEmpty()
 
             if (responseText.isBlank()) {
+                val responseType = connection.contentType ?: "unknown"
+                val responseLength = connection.contentLengthLong
+                val finalUrl = connection.url.toString()
                 throw IOException(
-                    "Examo server returned an empty response (HTTP ${status}). Check your internet and try again."
+                    "The API at $finalUrl returned HTTP $status with an empty body " +
+                        "(Content-Type: $responseType, length: $responseLength). " +
+                        "The app now uses the same API address as the website login. " +
+                        "Please retry; if this repeats, the live API deployment must be checked."
                 )
             }
 
