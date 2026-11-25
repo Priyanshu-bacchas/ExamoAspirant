@@ -860,7 +860,7 @@ class MainActivity : Activity() {
                 if (!page) return;
                 document.body.classList.add('examo-android-help-mode');
                 var crumb = document.querySelector('.topbar .breadcrumb strong');
-                if (crumb) crumb.textContent = 'Help & Support';
+                if (crumb && crumb.textContent.trim() !== 'Help & Support') crumb.textContent = 'Help & Support';
                 page.style.display = 'block';
                 page.style.width = '100%';
                 page.style.maxWidth = '100%';
