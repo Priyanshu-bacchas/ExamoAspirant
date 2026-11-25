@@ -601,7 +601,7 @@ class MainActivity : Activity() {
 
               function makeMarkup() {
                 return [
-                  '<section class="eah-hero"><img src="file:///android_res/drawable-nodpi/examo_help_banner.webp" alt="Need Help? We are here for you."></section>',
+                  '<section class="eah-hero"><img src=__EXAMO_HELP_BANNER_SRC__ alt="Need Help? We are here for you."></section>',
                   '<div class="eah-section-title">Quick Help</div>',
                   '<section class="eah-categories" aria-label="Help categories">',
                     '<button type="button" class="eah-category eah-user" data-category="User Guide"><span class="eah-category-icon"><svg viewBox="0 0 24 24"><path d="M3 5.5c3.2-1.4 6.2-.9 9 1.2v14c-2.8-2.1-5.8-2.6-9-1.2z"/><path d="M21 5.5c-3.2-1.4-6.2-.9-9 1.2v14c2.8-2.1 5.8-2.6 9-1.2z"/><path d="M6 9h3M6 12h3M15 9h3M15 12h3"/></svg></span><strong>User Guide</strong><small>Learn how to use Examo</small></button>',
@@ -906,7 +906,21 @@ class MainActivity : Activity() {
             })();
         """.trimIndent()
 
-        view.evaluateJavascript(script, null)
+        val bannerDataUrl = runCatching {
+            val bytes = resources.openRawResource(R.drawable.examo_help_banner).use { it.readBytes() }
+            "data:image/webp;base64," + android.util.Base64.encodeToString(
+                bytes,
+                android.util.Base64.NO_WRAP
+            )
+        }.getOrDefault("")
+
+        // Inject the bundled drawable as a data URI. WebView cannot reliably
+        // resolve the drawable-nodpi file URL on all Android versions.
+        val safeBannerSource = JSONObject.quote(bannerDataUrl)
+        view.evaluateJavascript(
+            script.replace("__EXAMO_HELP_BANNER_SRC__", safeBannerSource),
+            null
+        )
     }
 
     private fun installLoginSwipeBorder(view: WebView?) {
