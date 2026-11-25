@@ -680,7 +680,7 @@ class MainActivity : Activity() {
                   if (isLoginRequest) {
                     try {
                       var absoluteLoginUrl = new URL(String(requestUrl), window.location.href);
-                      var loginPath = absoluteLoginUrl.pathname.replace(/\\/+$/, '');
+                      var loginPath = absoluteLoginUrl.pathname.replace(/\/+$/, '');
                       var loginSuffix = loginPath.toLowerCase().lastIndexOf('/auth/login');
                       if (loginSuffix >= 0) {
                         loginApiBaseUrl =
