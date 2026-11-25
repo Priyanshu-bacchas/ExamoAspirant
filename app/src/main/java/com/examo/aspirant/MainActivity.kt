@@ -1005,22 +1005,22 @@ class MainActivity : Activity() {
         // Use the same browser fetch stack, API origin and CORS path used by
         // Auth.jsx for normal login. This avoids the empty native HTTP 200 body.
         val endpointJson = JSONObject.quote(
-            "\${pending.apiBaseUrl.trimEnd('/')}/Auth/verify-login-otp"
+            "${pending.apiBaseUrl.trimEnd('/')}/Auth/verify-login-otp"
         )
         val emailJson = JSONObject.quote(pending.email)
         val otpJson = JSONObject.quote(code)
         val script = """
             (async function () {
               try {
-                const response = await fetch(\${endpointJson}, {
+                const response = await fetch(${endpointJson}, {
                   method: 'POST',
                   headers: {
                     'Accept': 'application/json',
                     'Content-Type': 'application/json'
                   },
                   body: JSON.stringify({
-                    email: \${emailJson},
-                    otp: \${otpJson}
+                    email: ${emailJson},
+                    otp: ${otpJson}
                   })
                 });
 
