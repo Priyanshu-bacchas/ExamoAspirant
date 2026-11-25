@@ -509,6 +509,7 @@ class MainActivity : Activity() {
 
     // Android-only Help page redesign. The website and its APIs remain unchanged.
     // This is injected only into the main WebView and only while the Help page is active.
+    // Android-only Help page redesign. The live website remains unchanged.
     private fun installAndroidHelpRedesign(view: WebView?) {
         if (view == null || !::webView.isInitialized || view !== webView) return
 
@@ -530,19 +531,8 @@ class MainActivity : Activity() {
                 'body.examo-android-help-mode .topbar .breadcrumb strong{font-size:14px!important}',
                 '#examo-android-help-redesign{width:100%;max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:14px;color:#14213c;font-family:inherit}',
                 '#examo-android-help-redesign *{box-sizing:border-box}',
-                '.eah-hero{position:relative;min-height:188px;overflow:hidden;border-radius:20px;padding:20px 17px 18px;background:radial-gradient(circle at 88% 12%,rgba(255,255,255,.72),transparent 27%),linear-gradient(112deg,#dceaff 0%,#e3e7ff 58%,#eee6ff 100%);border:1px solid #d7e3fb;box-shadow:0 7px 16px rgba(33,75,141,.09)}',
-                '.eah-hero-copy{position:relative;z-index:2;width:66%;max-width:430px}',
-                '.eah-hero-kicker{display:inline-flex;align-items:center;gap:6px;margin:0 0 7px;color:#1762cf;font-weight:850;font-size:12px;letter-spacing:.08em;text-transform:uppercase}',
-                '.eah-hero h1{margin:0;color:#12264a;font-size:clamp(23px,6vw,31px);line-height:1.08;font-weight:850;letter-spacing:-.035em}',
-                '.eah-hero h1 em{font-style:normal;color:#1765dc}',
-                '.eah-hero p{margin:10px 0 0;color:#435a7b;font-size:13px;line-height:1.45;max-width:330px}',
-                '.eah-hero-art{position:absolute;right:0;bottom:0;width:43%;height:100%;display:flex;align-items:flex-end;justify-content:flex-end;pointer-events:none}',
-                '.eah-hero-art svg{display:block;width:100%;height:100%;max-height:188px;overflow:visible}',
-                '.eah-search{height:50px;display:flex;align-items:center;gap:10px;padding:5px 6px 5px 15px;margin-top:-1px;background:#fff;border:1px solid #ccdaf1;border-radius:999px;box-shadow:0 5px 13px rgba(33,75,141,.10)}',
-                '.eah-search-icon{flex:0 0 auto;color:#617894;display:flex}',
-                '.eah-search input{flex:1;min-width:0;height:38px;border:0!important;outline:0!important;background:transparent!important;box-shadow:none!important;padding:0!important;font-size:14px!important;color:#1e3558!important}',
-                '.eah-search input::placeholder{color:#8998ad}',
-                '.eah-search button{width:38px;height:38px;flex:0 0 38px;display:flex;align-items:center;justify-content:center;border:0;border-radius:50%;background:linear-gradient(135deg,#1674eb,#164bbd);color:#fff}',
+                '.eah-hero{width:100%;overflow:hidden;border-radius:19px;border:1px solid #d8e4fb;background:#e9efff;box-shadow:0 7px 16px rgba(33,75,141,.09);line-height:0}',
+                '.eah-hero img{display:block;width:100%;height:auto;aspect-ratio:3/1;object-fit:cover}',
                 '.eah-section-title{margin:2px 2px -5px;color:#14284b;font-weight:850;font-size:20px;line-height:1.2;display:flex;align-items:center;gap:9px}',
                 '.eah-section-title:before{content:"";width:4px;height:23px;border-radius:8px;background:#2469df;display:block}',
                 '.eah-categories{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}',
@@ -591,66 +581,27 @@ class MainActivity : Activity() {
                 '.eah-action-copy strong{font-size:13px;line-height:1.25;color:#172746;font-weight:850}',
                 '.eah-action-copy small{font-size:11px;line-height:1.3;color:#6c7c92;overflow-wrap:anywhere}',
                 '.eah-action-arrow{flex:0 0 auto;color:#334a6b;font-size:22px;line-height:1}',
-                '@media(min-width:620px){.eah-hero{min-height:220px;padding:25px}.eah-hero-art svg{max-height:220px}.eah-categories{gap:12px}.eah-category{min-height:132px;padding:15px}.eah-category strong{font-size:14px}.eah-category small{font-size:12px}.eah-category-icon,.eah-category-icon svg{width:36px;height:36px}.eah-support-actions{padding:0 14px 14px}.eah-support-action{min-height:78px;padding:14px 17px}.eah-action-copy strong{font-size:15px}.eah-action-copy small{font-size:13px}}',
-                '@media(max-width:360px){body.examo-android-help-mode .content-area{padding-left:9px!important;padding-right:9px!important}.eah-category{min-height:105px;padding:9px 7px}.eah-category strong{font-size:11px}.eah-category small{font-size:9px}.eah-hero{padding:17px 13px}.eah-hero h1{font-size:22px}.eah-hero-copy{width:69%}.eah-hero-art{width:40%}}'
+                '@media(min-width:620px){.eah-categories{gap:12px}.eah-category{min-height:132px;padding:15px}.eah-category strong{font-size:14px}.eah-category small{font-size:12px}.eah-category-icon,.eah-category-icon svg{width:36px;height:36px}.eah-support-actions{padding:0 14px 14px}.eah-support-action{min-height:78px;padding:14px 17px}.eah-action-copy strong{font-size:15px}.eah-action-copy small{font-size:13px}}',
+                '@media(max-width:360px){body.examo-android-help-mode .content-area{padding-left:9px!important;padding-right:9px!important}.eah-category{min-height:105px;padding:9px 7px}.eah-category strong{font-size:11px}.eah-category small{font-size:9px}}'
               ].join('');
               document.head.appendChild(style);
 
               var fallbackFaqs = [
-                {question:'How to use this website?',answer:'Sign up and log in, open Jobs and click “Add to ExamForm” on the exam you want. It is added to Exam Forms, Exams, Preparation and Results automatically. Then open Exam Forms, fill the form on the official website and change its status from Pending to Filled.'},
-                {question:'How do I add an exam form?',answer:'Exam forms are added from the Jobs page. Open Jobs > Latest Jobs and click “Add to ExamForm” next to the exam.'},
-                {question:'How do I change my exam form status?',answer:'Go to Student > Exam Forms, fill the form using the Open link, then click Edit and change the status from Pending to Filled.'},
-                {question:'How to reset my password?',answer:'On the login page click “Forgot Password?”, enter your registered email and follow the verification steps.'},
-                {question:'What payment methods are accepted?',answer:'Paid plans support the payment methods shown on the Subscription page.'}
+                {question:'How to use this website?',answer:'Examo helps you track jobs, exam forms, preparation and results in one place. Open Jobs and use Add to ExamForm to start.'},
+                {question:'What is Examo?',answer:'Examo is a student management app for government exam aspirants.'},
+                {question:'How to add an exam form?',answer:'Open Jobs > Latest Jobs and click Add to ExamForm next to the exam you want.'},
+                {question:'How to upload my documents?',answer:'Open Student > Documents and upload a JPG, PNG, WEBP or PDF file up to 10 MB.'},
+                {question:'The page is not loading properly',answer:'Wait a moment and refresh. If the problem continues, contact support with a screenshot.'}
               ];
               window.__examoAndroidHelpAllFaqs = window.__examoAndroidHelpAllFaqs || fallbackFaqs.slice();
-              window.__examoAndroidHelpSearchFaqs = [];
-              window.__examoAndroidHelpQuery = '';
-              window.__examoAndroidHelpMode = '';
+              window.__examoAndroidHelpFaqsReady = false;
               window.__examoAndroidHelpCategory = '';
               window.__examoAndroidHelpCaptureRunning = false;
               window.__examoAndroidHelpLastSignature = '';
 
               function makeMarkup() {
                 return [
-                  '<section class="eah-hero">',
-                    '<div class="eah-hero-copy">',
-                      '<div class="eah-hero-kicker">Need Help?</div>',
-                      '<h1>We are Here for <em>You!</em></h1>',
-                      '<p>Get quick answers, step-by-step guides or contact our support team.</p>',
-                    '</div>',
-                    '<div class="eah-hero-art" aria-hidden="true">',
-                      '<svg viewBox="0 0 260 190" xmlns="http://www.w3.org/2000/svg">',
-                        '<defs><linearGradient id="eahHoodie" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#398cff"/><stop offset="1" stop-color="#0750c8"/></linearGradient><linearGradient id="eahLaptop" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#c8dcf7"/></linearGradient></defs>',
-                        '<circle cx="184" cy="84" r="70" fill="#d7e5ff" opacity=".7"/>',
-                        '<path d="M25 59 Q25 30 58 30 H91 Q111 30 111 50 Q111 71 89 71 H61 L45 84 L48 69 Q25 67 25 59Z" fill="#fff" stroke="#2670e5" stroke-width="3"/>',
-                        '<text x="68" y="62" text-anchor="middle" font-size="27" font-weight="800" fill="#2163d2">?</text>',
-                        '<path d="M121 188 Q119 143 140 121 Q158 108 197 111 Q233 115 246 157 L252 190Z" fill="url(#eahHoodie)"/>',
-                        '<path d="M154 126 Q172 145 195 128 L205 188 H143Z" fill="#0f5bd4"/>',
-                        '<path d="M176 111 Q174 126 186 130 Q198 125 198 111" fill="#f1a078"/>',
-                        '<ellipse cx="184" cy="75" rx="37" ry="43" fill="#f4b18b"/>',
-                        '<path d="M147 72 Q139 31 177 22 Q220 17 224 57 Q221 65 217 69 Q210 47 190 48 Q171 58 147 72Z" fill="#3c2928"/>',
-                        '<path d="M148 58 Q161 23 195 29 Q217 31 225 55 Q207 47 195 53 Q171 64 148 72Z" fill="#5b3730"/>',
-                        '<path d="M164 77 Q169 74 174 77 M196 77 Q201 74 207 77" stroke="#51302c" stroke-width="3" stroke-linecap="round"/>',
-                        '<circle cx="171" cy="84" r="3" fill="#243149"/><circle cx="200" cy="84" r="3" fill="#243149"/>',
-                        '<path d="M179 99 Q188 106 198 98" stroke="#b54d43" stroke-width="3" fill="none" stroke-linecap="round"/>',
-                        '<path d="M140 75 Q130 65 137 49 Q145 18 184 15 Q226 15 234 53 Q238 69 225 82" fill="none" stroke="#1665dd" stroke-width="9" stroke-linecap="round"/>',
-                        '<path d="M136 61 Q125 57 124 76 Q125 94 141 91 L145 83" fill="#2478eb" stroke="#1455bf" stroke-width="3"/>',
-                        '<path d="M231 62 Q244 58 247 76 Q246 94 230 91 L226 82" fill="#2478eb" stroke="#1455bf" stroke-width="3"/>',
-                        '<path d="M147 133 L162 153 L174 137 M206 133 L194 153 L182 137" fill="none" stroke="#b8d5ff" stroke-width="3"/>',
-                        '<path d="M155 147 L165 164 M199 147 L189 164" stroke="#eaf3ff" stroke-width="2"/>',
-                        '<rect x="27" y="139" width="133" height="45" rx="7" fill="url(#eahLaptop)" stroke="#91b7eb" stroke-width="2"/>',
-                        '<path d="M17 185 H170 L183 192 H5Z" fill="#9fb9d8"/>',
-                        '<rect x="77" y="153" width="30" height="22" rx="6" fill="#143c7d"/>',
-                        '<text x="92" y="169" text-anchor="middle" font-size="15" font-weight="800" fill="#fff">E</text>',
-                      '</svg>',
-                    '</div>',
-                  '</section>',
-                  '<form class="eah-search" role="search">',
-                    '<span class="eah-search-icon"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10.8" cy="10.8" r="7.2"/><path d="m16.2 16.2 4.2 4.2"/></svg></span>',
-                    '<input class="eah-search-input" type="search" placeholder="Search for help, guides or issues..." aria-label="Search help">',
-                    '<button type="submit" aria-label="Search"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10.8" cy="10.8" r="7.2"/><path d="m16.2 16.2 4.2 4.2"/></svg></button>',
-                  '</form>',
+                  '<section class="eah-hero"><img src="file:///android_res/drawable-nodpi/examo_help_banner.webp" alt="Need Help? We are here for you."></section>',
                   '<div class="eah-section-title">Quick Help</div>',
                   '<section class="eah-categories" aria-label="Help categories">',
                     '<button type="button" class="eah-category eah-user" data-category="User Guide"><span class="eah-category-icon"><svg viewBox="0 0 24 24"><path d="M3 5.5c3.2-1.4 6.2-.9 9 1.2v14c-2.8-2.1-5.8-2.6-9-1.2z"/><path d="M21 5.5c-3.2-1.4-6.2-.9-9 1.2v14c2.8-2.1 5.8-2.6 9-1.2z"/><path d="M6 9h3M6 12h3M15 9h3M15 12h3"/></svg></span><strong>User Guide</strong><small>Learn how to use Examo</small></button>',
@@ -671,14 +622,66 @@ class MainActivity : Activity() {
                 ].join('');
               }
 
-              var categoryRules = {
-                'User Guide': /website|dashboard|student profile|subject|schedule|preparation|how to use|what is examo|create account|features/i,
-                'Account Help': /login|log in|password|account|otp|email|mobile|sign up|sign in|profile/i,
-                'Exam Forms': /exam form|examform|form status|add an exam|manual|delete.*form|edit.*form|change.*status|fill.*form/i,
-                'Jobs & Updates': /job|admit card|result|exam date|job alert|latest vacancy|recruitment/i,
-                'Documents': /document|upload|file|pdf|photo|signature|certificate/i,
-                'Technical Support': /technical|can't log|cannot log|error|issue|crash|loading|not working|failed|failing|bug|problem/i
+              function normaliseQuestion(value) {
+                return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
+              }
+
+              // Exact question-to-section mapping: a question is displayed in only its intended category.
+              var questionGroups = {
+                'User Guide': [
+                  'How to use this website?',
+                  'What is Examo?',
+                  'How to set up my student profile?',
+                  'What does the Dashboard show?',
+                  'How to add subjects and schedules?',
+                  'How do I track my exam preparation?',
+                  'What are Notifications and reminders?'
+                ],
+                'Account Help': [
+                  "I can't log in to my account",
+                  'How to reset my password?',
+                  'I did not receive the OTP / verification code',
+                  'Why do I get a code every time I log in?',
+                  'How does Continue with Google work?',
+                  'Is my data and uploaded documents safe?',
+                  'How do I change my email or mobile number?',
+                  'How do I delete my account?',
+                  'My account is blocked',
+                  'How does the free trial work?',
+                  'How much does Examo cost?',
+                  'What payment methods are accepted?',
+                  'How do I buy or renew a plan?',
+                  'How can I change or cancel my plan?',
+                  'How do I check when my plan ends?',
+                  'How do I download my payment receipt?',
+                  'My payment was deducted but my plan is not active'
+                ],
+                'Exam Forms': [
+                  'How do I add an exam form?',
+                  'How do I change my exam form status?',
+                  'Can I add an exam form manually?',
+                  "Why can't I add a job to my Exam Forms?"
+                ],
+                'Jobs & Updates': [
+                  'What are the Jobs, Admit Card and Results tabs?',
+                  'Where can I track my exam dates?',
+                  'How to check my results?'
+                ],
+                'Documents': [
+                  'How to upload my documents?',
+                  'My document upload is failing'
+                ],
+                'Technical Support': [
+                  'The page is not loading properly',
+                  'How do I contact support?'
+                ]
               };
+              var questionToCategory = {};
+              Object.keys(questionGroups).forEach(function (category) {
+                questionGroups[category].forEach(function (question) {
+                  questionToCategory[normaliseQuestion(question)] = category;
+                });
+              });
 
               function normaliseFaq(item) {
                 return {
@@ -687,7 +690,20 @@ class MainActivity : Activity() {
                 };
               }
 
-              function renderPanel(title, subtitle, items, emptyText) {
+              function itemsForCategory(name) {
+                var allowed = questionGroups[name] || [];
+                var byQuestion = {};
+                (window.__examoAndroidHelpAllFaqs || []).forEach(function (raw) {
+                  var faq = normaliseFaq(raw);
+                  var key = normaliseQuestion(faq.question);
+                  if (key) byQuestion[key] = faq;
+                });
+                return allowed.map(function (question) {
+                  return byQuestion[normaliseQuestion(question)];
+                }).filter(Boolean);
+              }
+
+              function renderPanel(title, subtitle, items, emptyText, isLoading) {
                 var root = document.getElementById('examo-android-help-redesign');
                 if (!root) return;
                 var panel = root.querySelector('.eah-panel');
@@ -696,13 +712,22 @@ class MainActivity : Activity() {
                 panel.querySelector('.eah-panel-subtitle').textContent = subtitle || '';
                 list.innerHTML = '';
                 panel.classList.add('is-visible');
+
+                if (isLoading) {
+                  var loading = document.createElement('div');
+                  loading.className = 'eah-no-results';
+                  loading.textContent = 'Loading questions...';
+                  list.appendChild(loading);
+                  return;
+                }
                 if (!items || !items.length) {
                   var empty = document.createElement('div');
                   empty.className = 'eah-no-results';
-                  empty.textContent = emptyText || 'No matching help articles found. Try another search or chat with Examo Assistant.';
+                  empty.textContent = emptyText || 'No questions are available in this section yet.';
                   list.appendChild(empty);
                   return;
                 }
+
                 items.forEach(function (raw) {
                   var item = normaliseFaq(raw);
                   if (!item.question) return;
@@ -719,7 +744,7 @@ class MainActivity : Activity() {
                   question.appendChild(chevron);
                   var answer = document.createElement('div');
                   answer.className = 'eah-faq-answer';
-                  answer.textContent = item.answer || 'For more help with this topic, chat with Examo Assistant or contact our support team.';
+                  answer.textContent = item.answer || 'Please contact Examo Support for more help with this question.';
                   question.addEventListener('click', function () {
                     var willOpen = !wrap.classList.contains('open');
                     Array.prototype.forEach.call(list.querySelectorAll('.eah-faq-item.open'), function (node) {
@@ -733,52 +758,13 @@ class MainActivity : Activity() {
                 });
               }
 
-              function syncOriginalSearch(query) {
-                var originalInput = document.querySelector('.hs-search input');
-                if (!originalInput) return;
-                var setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-                setter.call(originalInput, query);
-                originalInput.dispatchEvent(new Event('input', {bubbles:true}));
-              }
-
               function openCategory(name) {
-                window.__examoAndroidHelpMode = 'category';
                 window.__examoAndroidHelpCategory = name;
-                window.__examoAndroidHelpQuery = '';
-                var input = document.querySelector('.eah-search-input');
-                if (input) input.value = '';
-                syncOriginalSearch('');
-                var regex = categoryRules[name] || /./;
-                var matches = (window.__examoAndroidHelpAllFaqs || fallbackFaqs).filter(function (raw) {
-                  var faq = normaliseFaq(raw);
-                  return regex.test(faq.question + ' ' + faq.answer);
-                });
+                var matches = itemsForCategory(name);
                 renderPanel(name + ' – FAQs', 'Questions related to ' + name + '.', matches,
-                  'No FAQs are available in this category yet. Try Search or chat with Examo Assistant.');
+                  'No FAQs are available in this category yet.', !window.__examoAndroidHelpFaqsReady);
                 var panel = document.querySelector('#examo-android-help-redesign .eah-panel');
                 if (panel) panel.scrollIntoView({behavior:'smooth', block:'nearest'});
-                window.setTimeout(queueFaqCapture, 500);
-              }
-
-              function searchHelp(value) {
-                var query = String(value || '').trim();
-                window.__examoAndroidHelpMode = query ? 'search' : '';
-                window.__examoAndroidHelpQuery = query;
-                window.__examoAndroidHelpSearchFaqs = query
-                  ? (window.__examoAndroidHelpAllFaqs || fallbackFaqs).filter(function (raw) {
-                      var faq = normaliseFaq(raw);
-                      return (faq.question + ' ' + faq.answer).toLowerCase().indexOf(query.toLowerCase()) >= 0;
-                    })
-                  : [];
-                syncOriginalSearch(query);
-                if (!query) {
-                  var panel = document.querySelector('#examo-android-help-redesign .eah-panel');
-                  if (panel) panel.classList.remove('is-visible');
-                  return;
-                }
-                renderPanel('Search results', 'Answers matching “' + query + '”.', window.__examoAndroidHelpSearchFaqs,
-                  'No matching help articles found. Try another keyword or chat with Examo Assistant.');
-                window.setTimeout(queueFaqCapture, 650);
               }
 
               async function captureFaqs() {
@@ -800,7 +786,7 @@ class MainActivity : Activity() {
                     var currentItem = current.closest('.hs-acc-item');
                     if (!currentItem || !currentItem.querySelector('.hs-acc-body')) {
                       current.click();
-                      await new Promise(function (resolve) { window.setTimeout(resolve, 85); });
+                      await new Promise(function (resolve) { window.setTimeout(resolve, 95); });
                     }
                     current = Array.prototype.slice.call(document.querySelectorAll('.hs-accordion .hs-acc-head')).find(function (b) {
                       return (b.querySelector('span') || b).innerText.trim() === questionText;
@@ -816,10 +802,9 @@ class MainActivity : Activity() {
                     if (restore && !restore.closest('.hs-acc-item').classList.contains('open')) restore.click();
                   }
                 } finally {
-                  if (window.__examoAndroidHelpQuery) {
-                    window.__examoAndroidHelpSearchFaqs = collected;
-                  } else {
-                    window.__examoAndroidHelpAllFaqs = collected.length ? collected : fallbackFaqs.slice();
+                  if (collected.length) {
+                    window.__examoAndroidHelpAllFaqs = collected;
+                    window.__examoAndroidHelpFaqsReady = true;
                   }
                   window.__examoAndroidHelpCaptureRunning = false;
                   refreshPanelAfterCapture();
@@ -827,26 +812,10 @@ class MainActivity : Activity() {
               }
 
               function refreshPanelAfterCapture() {
-                var mode = window.__examoAndroidHelpMode;
-                if (!mode) return;
-                if (mode === 'category') {
-                  var name = window.__examoAndroidHelpCategory;
-                  var regex = categoryRules[name] || /./;
-                  var matches = (window.__examoAndroidHelpAllFaqs || fallbackFaqs).filter(function (raw) {
-                    var faq = normaliseFaq(raw);
-                    return regex.test(faq.question + ' ' + faq.answer);
-                  });
-                  renderPanel(name + ' – FAQs', 'Questions related to ' + name + '.', matches,
-                    'No FAQs are available in this category yet. Try Search or chat with Examo Assistant.');
-                } else if (mode === 'search') {
-                  var query = window.__examoAndroidHelpQuery || '';
-                  var matches = (window.__examoAndroidHelpSearchFaqs || []).filter(function (raw) {
-                    var faq = normaliseFaq(raw);
-                    return (faq.question + ' ' + faq.answer).toLowerCase().indexOf(query.toLowerCase()) >= 0;
-                  });
-                  renderPanel('Search results', 'Answers matching “' + query + '”.', matches,
-                    'No matching help articles found. Try another keyword or chat with Examo Assistant.');
-                }
+                var name = window.__examoAndroidHelpCategory;
+                if (!name) return;
+                renderPanel(name + ' – FAQs', 'Questions related to ' + name + '.', itemsForCategory(name),
+                  'No FAQs are available in this category yet.', !window.__examoAndroidHelpFaqsReady);
               }
 
               var captureTimer = null;
@@ -875,15 +844,6 @@ class MainActivity : Activity() {
                   root.id = 'examo-android-help-redesign';
                   root.innerHTML = makeMarkup();
                   page.insertAdjacentElement('afterend', root);
-                  var searchForm = root.querySelector('.eah-search');
-                  var searchInput = root.querySelector('.eah-search-input');
-                  searchForm.addEventListener('submit', function (event) {
-                    event.preventDefault();
-                    searchHelp(searchInput.value);
-                  });
-                  searchInput.addEventListener('input', function () {
-                    searchHelp(searchInput.value);
-                  });
                   root.querySelectorAll('.eah-category').forEach(function (button) {
                     button.addEventListener('click', function () {
                       openCategory(button.getAttribute('data-category'));
@@ -891,11 +851,7 @@ class MainActivity : Activity() {
                   });
                   root.querySelector('.eah-panel-close').addEventListener('click', function () {
                     root.querySelector('.eah-panel').classList.remove('is-visible');
-                    window.__examoAndroidHelpMode = '';
                     window.__examoAndroidHelpCategory = '';
-                    window.__examoAndroidHelpQuery = '';
-                    searchInput.value = '';
-                    syncOriginalSearch('');
                   });
                   root.querySelector('.eah-chat-action').addEventListener('click', function () {
                     var button = document.querySelector('.hs-side .hs-chat-open');
