@@ -599,7 +599,7 @@ class MainActivity : Activity() {
               document.head.appendChild(style);
 
               var fallbackFaqs = [
-                {question:'How to use this website?',answer:'Examo helps you track jobs, exam forms, preparation and results in one place. Open Jobs and use Add to ExamForm to start.'},
+                {question:'How to use this App?',answer:'Examo helps you track jobs, exam forms, preparation and results in one place. Open Jobs and use Add to ExamForm to start.'},
                 {question:'What is Examo?',answer:'Examo is a student management app for government exam aspirants.'},
                 {question:'How to add an exam form?',answer:'Open Jobs > Latest Jobs and click Add to ExamForm next to the exam you want.'},
                 {question:'How to upload my documents?',answer:'Open Student > Documents and upload a JPG, PNG, WEBP or PDF file up to 10 MB.'},
@@ -641,7 +641,7 @@ class MainActivity : Activity() {
               // Exact question-to-section mapping: a question is displayed in only its intended category.
               var questionGroups = {
                 'User Guide': [
-                  'How to use this website?',
+                  'How to use this App?',
                   'What is Examo?',
                   'How to set up my student profile?',
                   'What does the Dashboard show?',
@@ -697,8 +697,8 @@ class MainActivity : Activity() {
 
               function normaliseFaq(item) {
                 return {
-                  question: String(item.question || item.Question || '').trim(),
-                  answer: String(item.answer || item.Answer || item.content || '').trim()
+                  question: String(item.question || item.Question || '').trim().replace(/website/gi, 'App'),
+                  answer: String(item.answer || item.Answer || item.content || '').trim().replace(/website/gi, 'App')
                 };
               }
 
