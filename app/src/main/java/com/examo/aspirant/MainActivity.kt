@@ -419,7 +419,6 @@ class MainActivity : Activity() {
                     hideGoogleSignInInApp(view)
                     installLoginSwipeBorder(view)
                     installLoginOtpRecovery(view)
-                    installAndroidHelpRedesign(view)
                     restorePendingLoginOtpIfNeeded(view, url)
                 }
 
