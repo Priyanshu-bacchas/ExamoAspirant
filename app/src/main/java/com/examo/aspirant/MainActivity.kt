@@ -515,6 +515,7 @@ class MainActivity : Activity() {
 
         val script = """
             (function () {
+              var subscriptionBooksImageSrc = __EXAMO_SUBSCRIPTION_BOOKS_URL__;
               if (window.__examoAndroidHelpBooted) {
                 window.__examoApplyAndroidHelp && window.__examoApplyAndroidHelp();
                 return;
@@ -2188,7 +2189,8 @@ class MainActivity : Activity() {
                 '.examo-mobile-subscription-page .hs-hero-title{position:relative!important;z-index:2!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:3px!important;min-height:97px!important;margin:0!important;text-align:left!important}' +
                 '.examo-mobile-subscription-page .hs-hero-title h1{position:relative!important;z-index:2!important;flex:1 1 64%!important;width:64%!important;max-width:66%!important;margin:0!important;color:#111d43!important;font-family:"Roboto Condensed","Arial Narrow",sans-serif!important;font-size:clamp(20px,5.4vw,24px)!important;line-height:1.02!important;font-weight:900!important;letter-spacing:-.65px!important;text-align:left!important}' +
                 '.examo-mobile-subscription-page .hs-hero-title h1:after{content:"Choose a plan that fits your learning goals.";display:block!important;margin:7px 0 0!important;color:#1f2d50!important;font-family:"Roboto Condensed","Arial Narrow",sans-serif!important;font-size:clamp(10px,2.9vw,12px)!important;line-height:1.28!important;font-weight:500!important;letter-spacing:0!important}' +
-                '.examo-mobile-subscription-page .hs-hero-title:after{content:"";display:block!important;flex:0 0 34%!important;width:34%!important;height:102px!important;margin:-2px -2px 0 0!important;background-repeat:no-repeat!important;background-position:center!important;background-size:contain!important;background-image:url(__EXAMO_SUBSCRIPTION_BOOKS_URL__)!important}' +
+                '.examo-mobile-subscription-page .hs-hero-title:after{content:none!important;display:none!important}' +
+                '.examo-mobile-subscription-page .hs-hero-title .examo-subscription-books-image{display:block!important;flex:0 0 34%!important;width:34%!important;max-width:34%!important;height:108px!important;min-width:0!important;object-fit:contain!important;object-position:center!important;align-self:center!important;position:relative!important;z-index:3!important;margin:-2px -1px 0 0!important;padding:0!important;border:0!important;background:transparent!important}' +
                 '.examo-mobile-subscription-page .hs-search{position:relative!important;z-index:2!important;display:flex!important;align-items:center!important;width:100%!important;max-width:none!important;height:40px!important;margin:4px 0 0!important;padding:3px 4px 3px 12px!important;background:#fff!important;border:1px solid #d5d8fa!important;border-radius:999px!important;box-shadow:0 3px 8px rgba(57,48,129,.11)!important}' +
                 '.examo-mobile-subscription-page .hs-search input{flex:1 1 auto!important;min-width:0!important;height:32px!important;padding:0 4px!important;border:0!important;outline:0!important;background:transparent!important;color:#28385b!important;font-family:"Roboto Condensed","Arial Narrow",sans-serif!important;font-size:12px!important}' +
                 '.examo-mobile-subscription-page .hs-search input::placeholder{color:#71809a!important;opacity:1!important}' +
@@ -2258,6 +2260,27 @@ class MainActivity : Activity() {
                 '.examo-mobile-subscription-page .hs-side>.hs-panel:nth-of-type(2) .hs-link-btn{grid-area:link!important;display:inline-flex!important;align-items:center!important;align-self:start!important;margin-top:1px!important;padding:0!important;color:#5d1fc8!important;font-family:"Roboto Condensed","Arial Narrow",sans-serif!important;font-size:12px!important;font-weight:900!important}' +
                 '@media(max-width:380px){.examo-mobile-subscription-page .hs-hero{padding:44px 10px 9px!important}.examo-mobile-subscription-page .hs-hero-title{min-height:91px!important}.examo-mobile-subscription-page .hs-hero-title:after{flex-basis:32%!important;width:32%!important;height:91px!important}.examo-mobile-subscription-page .hs-hero-title h1{font-size:20px!important;max-width:66%!important}.examo-mobile-subscription-page .hs-hero-title h1:after{font-size:10px!important}.examo-mobile-subscription-page .hs-plan-body{grid-template-columns:minmax(0,1fr) minmax(104px,38%)!important;column-gap:7px!important;padding:8px 10px 10px!important}.examo-mobile-subscription-page .hs-plan-features{column-gap:7px!important;font-size:10.5px!important}.examo-mobile-subscription-page .hs-plan-card .hs-faq-card-head{padding:8px 10px!important}.examo-mobile-subscription-page .hs-plan-card .hs-faq-card-head h3{font-size:14px!important}.examo-mobile-subscription-page .hs-plan-card .hs-btn{font-size:10px!important}}' +
                 '@media(max-width:330px){.examo-mobile-subscription-page .hs-hero-title:after{flex-basis:29%!important;width:29%!important;height:82px!important}.examo-mobile-subscription-page .hs-hero-title h1{max-width:70%!important;font-size:18px!important}.examo-mobile-subscription-page .hs-plan-body{grid-template-columns:minmax(0,1fr)!important;grid-template-areas:"features" "price" "sub" "button"!important}.examo-mobile-subscription-page .hs-plan-card .hs-btn{margin-top:8px!important}.examo-mobile-subscription-page .hs-plan-features{grid-template-columns:minmax(0,1fr)!important}}' +
+                /* Subscription details: compact the card's vertical footprint while retaining readable text. */
+                '.examo-mobile-subscription-page .hs-side>h2{font-size:19px!important;line-height:1.2!important;margin:2px 0 6px!important;padding-left:11px!important}' +
+                '.examo-mobile-subscription-page .hs-side>.hs-panel:nth-of-type(1){position:relative!important;display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:4px!important;margin:0 0 10px!important;padding:10px!important;border-radius:15px!important}' +
+                '.examo-mobile-subscription-page .hs-side>.hs-panel:nth-of-type(1)>.hs-panel-row:first-child{min-height:31px!important;padding-left:38px!important}' +
+                '.examo-mobile-subscription-page .hs-side>.hs-panel:nth-of-type(1)>.hs-panel-row:first-child:before{width:29px!important;height:29px!important;border-radius:9px!important;font-size:18px!important}' +
+                '.examo-mobile-subscription-page .hs-side>.hs-panel:nth-of-type(1)>.hs-panel-row:first-child h3{font-size:16px!important;line-height:1.15!important}' +
+                '.examo-mobile-subscription-page .hs-side>.hs-panel:nth-of-type(1)>.hs-panel-row:first-child .hs-status-icon svg{width:18px!important;height:18px!important}' +
+                '.examo-mobile-subscription-page .hs-side>.hs-panel:nth-of-type(1)>p{font-size:13px!important;line-height:1.2!important;margin:0!important}' +
+                '.examo-mobile-subscription-page .hs-side>.hs-panel:nth-of-type(1)>p:first-of-type{position:absolute!important;top:14px!important;right:42px!important;z-index:2!important;display:inline-flex!important;align-items:center!important;gap:3px!important;min-height:20px!important;padding:3px 7px!important;border-radius:999px!important;background:#e0f7e8!important;color:#168343!important;font-size:12px!important;line-height:1!important;white-space:nowrap!important}' +
+                '.examo-mobile-subscription-page .hs-side>.hs-panel:nth-of-type(1)>p:first-of-type strong{display:none!important}' +
+                '.examo-mobile-subscription-page .hs-side>.hs-panel:nth-of-type(1)>p:first-of-type .hs-active{color:#168343!important;font-size:12px!important;font-weight:850!important}' +
+                '.examo-mobile-subscription-page .hs-side>.hs-panel:nth-of-type(1)>p:nth-of-type(2),.examo-mobile-subscription-page .hs-side>.hs-panel:nth-of-type(1)>p:nth-of-type(3){min-height:18px!important;display:flex!important;align-items:center!important;gap:4px!important}' +
+                '.examo-mobile-subscription-page .hs-side>.hs-panel:nth-of-type(1)>hr{margin:1px 0!important;border-top:1px solid rgba(87,79,157,.16)!important}' +
+                '.examo-mobile-subscription-page .hs-side>.hs-panel:nth-of-type(1)>.hs-btn{min-height:34px!important;margin:0!important;padding:6px 9px!important;font-size:13px!important}' +
+                '.examo-mobile-subscription-page .hs-side>.hs-panel:nth-of-type(1)>.hs-panel-row:nth-of-type(2){min-height:26px!important;padding:4px 8px!important}' +
+                '.examo-mobile-subscription-page .hs-side>.hs-panel:nth-of-type(1)>.hs-panel-row:nth-of-type(2) h3{font-size:13px!important}' +
+                '.examo-mobile-subscription-page .hs-side>.hs-panel:nth-of-type(1) .hs-payments{gap:3px!important}' +
+                '.examo-mobile-subscription-page .hs-side>.hs-panel:nth-of-type(1) .hs-payments li{min-height:33px!important;padding:4px 7px!important;font-size:12px!important}' +
+                '.examo-mobile-subscription-page .hs-side>.hs-panel:nth-of-type(1) .hs-payments li span{font-size:12px!important}' +
+                '.examo-mobile-subscription-page .hs-side>.hs-panel:nth-of-type(1) .hs-payments .hs-btn-sm{min-height:27px!important;padding:4px 8px!important;font-size:11px!important}' +
+                '@media(max-width:380px){.examo-mobile-subscription-page .hs-side>.hs-panel:nth-of-type(1){padding:9px!important;gap:3px!important}.examo-mobile-subscription-page .hs-side>.hs-panel:nth-of-type(1)>.hs-panel-row:first-child{min-height:29px!important}.examo-mobile-subscription-page .hs-side>.hs-panel:nth-of-type(1)>p:first-of-type{right:38px!important}.examo-mobile-subscription-page .hs-side>h2{font-size:18px!important}}' +
                 /* Final dashboard polish: left-aligned welcome, stacked cap/books, compact first-screen fit. */
                 '.examo-mobile-dashboard-page .dashboard-heading{min-height:76px!important;margin:0 0 8px!important;padding:8px 11px!important;align-items:center!important}' +
                 '.examo-mobile-dashboard-page .dashboard-heading>div{flex:0 1 78%!important;width:78%!important;max-width:78%!important;min-width:0!important;margin:0 auto 0 0!important;padding:0!important;transform:none!important;text-align:left!important;align-self:center!important}' +
@@ -2617,7 +2640,20 @@ class MainActivity : Activity() {
                 var subscriptionPlan = document.querySelector('.hs-page .hs-plan-card');
                 if (subscriptionPlan) {
                   var subscriptionPage = subscriptionPlan.closest('.hs-page');
-                  if (subscriptionPage) subscriptionPage.classList.add('examo-mobile-subscription-page');
+                  if (subscriptionPage) {
+                    subscriptionPage.classList.add('examo-mobile-subscription-page');
+                    var subscriptionHeroTitle = subscriptionPage.querySelector('.hs-hero-title');
+                    if (subscriptionHeroTitle && subscriptionBooksImageSrc &&
+                        !subscriptionHeroTitle.querySelector('.examo-subscription-books-image')) {
+                      var booksImage = document.createElement('img');
+                      booksImage.className = 'examo-subscription-books-image';
+                      booksImage.alt = 'Books with a graduation cap';
+                      booksImage.decoding = 'async';
+                      booksImage.loading = 'eager';
+                      booksImage.src = subscriptionBooksImageSrc;
+                      subscriptionHeroTitle.appendChild(booksImage);
+                    }
+                  }
                 }
                 document.querySelectorAll('table.data-table').forEach(function(table) {
                   var headers = Array.from(table.querySelectorAll('thead th')).map(function(th) {
