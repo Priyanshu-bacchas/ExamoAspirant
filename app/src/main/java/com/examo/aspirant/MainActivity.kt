@@ -506,6 +506,104 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun installLoginSwipeBorder(view: WebView?) {
+        val script = """
+            (function () {
+              function addHandle() {
+                var shell = document.querySelector('.ex-shell');
+                if (!shell) return;
+                if (getComputedStyle(shell).position === 'static') shell.style.position = 'relative';
+                var bar = shell.querySelector('.examo-native-swipe-border');
+                if (!bar) {
+                  bar = document.createElement('div');
+                  bar.className = 'examo-native-swipe-border';
+                  bar.setAttribute('role', 'button');
+                  bar.setAttribute('aria-label', 'Swipe down to return to welcome screen');
+                  // Large transparent touch target, with a slim inset blue grip.
+                  // This keeps the reference look but is much easier to grab.
+                  bar.style.cssText = 'position:absolute;left:0;right:0;top:0;height:46px;background:transparent;border-radius:26px 26px 0 0;z-index:10020;touch-action:none;cursor:ns-resize';
+                  var grip = document.createElement('div');
+                  grip.style.cssText = 'position:absolute;left:14px;right:14px;top:10px;height:6px;background:#2455ad;border-radius:999px;box-shadow:0 2px 4px rgba(20,50,110,.22);pointer-events:none';
+                  bar.appendChild(grip);
+                  var downCue = document.createElement('div');
+                  downCue.textContent = '↓';
+                  downCue.setAttribute('aria-hidden', 'true');
+                  downCue.style.cssText = 'position:absolute;left:50%;top:17px;transform:translateX(-50%);font:700 18px/20px Arial,sans-serif;color:#2455ad;text-shadow:0 1px 2px rgba(20,50,110,.16);pointer-events:none;animation:examoSwipeDown 1.05s ease-in-out infinite';
+                  bar.appendChild(downCue);
+                  if (!document.getElementById('examo-swipe-down-style')) {
+                    var cueStyle = document.createElement('style');
+                    cueStyle.id = 'examo-swipe-down-style';
+                    cueStyle.textContent = '@keyframes examoSwipeDown{0%,100%{transform:translate(-50%,0);opacity:.68}50%{transform:translate(-50%,4px);opacity:1}}';
+                    document.head.appendChild(cueStyle);
+                  }
+                  shell.appendChild(bar);
+                }
+                var brand = shell.querySelector('.ex-mobile-brand');
+                if (brand) {
+                  brand.style.marginTop = '10px';
+                  brand.style.marginBottom = '12px';
+                }
+                var tabs = shell.querySelector('.ex-main-tabs');
+                if (tabs) tabs.style.marginTop = '-8px';
+                if (bar.dataset.dragBound === '1') return;
+                bar.dataset.dragBound = '1';
+                var startY = 0, dragging = false, lastY = 0;
+                bar.addEventListener('touchstart', function(e) {
+                  if (!e.touches || !e.touches.length) return;
+                  startY = e.touches[0].clientY; lastY = startY; dragging = true;
+                  shell.style.transition = 'none';
+                }, {passive:true});
+                bar.addEventListener('touchmove', function(e) {
+                  if (!dragging || !e.touches || !e.touches.length) return;
+                  lastY = e.touches[0].clientY;
+                  var dy = Math.max(0, Math.min(lastY - startY, window.innerHeight * .72));
+                  shell.style.transform = 'translate3d(0,' + dy + 'px,0)';
+                  if (e.cancelable) e.preventDefault();
+                }, {passive:false});
+                function finish() {
+                  if (!dragging) return;
+                  dragging = false;
+                  var dy = Math.max(0, lastY - startY);
+                  shell.style.willChange = 'transform';
+                  shell.style.transition = 'transform 320ms cubic-bezier(.22,.61,.36,1)';
+                  if (dy > 70 && window.ExamoSwipeBridge) {
+                    shell.style.transform = 'translate3d(0,' + window.innerHeight + 'px,0)';
+                    setTimeout(function() {
+                      shell.style.transform = '';
+                      window.ExamoSwipeBridge.showWelcome();
+                    }, 320);
+                  } else {
+                    shell.style.transform = 'translate3d(0,0,0)';
+                    setTimeout(function(){ shell.style.transition = ''; shell.style.willChange = ''; }, 340);
+                  }
+                }
+                bar.addEventListener('touchend', finish, {passive:true});
+                bar.addEventListener('touchcancel', finish, {passive:true});
+                bar.addEventListener('pointerdown', function(e) {
+                  if (e.pointerType === 'touch') return;
+                  startY = lastY = e.clientY; dragging = true;
+                  shell.style.transition = 'none';
+                  bar.setPointerCapture(e.pointerId);
+                });
+                bar.addEventListener('pointermove', function(e) {
+                  if (!dragging || e.pointerType === 'touch') return;
+                  lastY = e.clientY;
+                  var dy = Math.max(0, Math.min(lastY - startY, window.innerHeight * .72));
+                  shell.style.transform = 'translate3d(0,' + dy + 'px,0)';
+                });
+                bar.addEventListener('pointerup', finish);
+                bar.addEventListener('pointercancel', finish);
+              }
+              addHandle();
+              if (!window.__examoSwipeBorderObserver) {
+                window.__examoSwipeBorderObserver = new MutationObserver(addHandle);
+                window.__examoSwipeBorderObserver.observe(document.documentElement, {childList:true,subtree:true});
+              }
+            })();
+        """.trimIndent()
+        view?.evaluateJavascript(script, null)
+    }
+
     private fun showWelcomeSplash() {
         // Dismiss only the login/signup sheet; never remove or animate the
         // welcome screen underneath it.
