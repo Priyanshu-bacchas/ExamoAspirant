@@ -507,589 +507,6 @@ class MainActivity : Activity() {
         }
     }
 
-    // Android-only Help page redesign. The website and its APIs remain unchanged.
-    // This is injected only into the main WebView and only while the Help page is active.
-    // Android-only Help page redesign. The live website remains unchanged.
-    private fun installAndroidHelpRedesign(view: WebView?) {
-        if (view == null || !::webView.isInitialized || view !== webView) return
-
-        val script = """
-            (function () {
-              var subscriptionBooksImageSrc = __EXAMO_SUBSCRIPTION_BOOKS_URL__;
-              if (window.__examoAndroidHelpBooted) {
-                window.__examoApplyAndroidHelp && window.__examoApplyAndroidHelp();
-                return;
-              }
-              window.__examoAndroidHelpBooted = true;
-
-              var style = document.createElement('style');
-              style.id = 'examo-android-help-style';
-              style.textContent = [
-                'body.examo-android-help-mode{background:#edf3fc!important}',
-                'body.examo-android-help-mode .content-area{padding:14px 12px 26px!important;background:linear-gradient(180deg,#f3f7ff 0%,#eaf1ff 100%)!important;min-width:0!important;overflow-x:hidden!important}',
-                'body.examo-android-help-mode .hs-page{display:block!important;width:100%!important;max-width:100%!important;margin:0!important;min-width:0!important}',
-                'body.examo-android-help-mode .hs-main,body.examo-android-help-mode .hs-side{display:none!important}',
-                'body.examo-android-help-mode .topbar .breadcrumb strong{font-size:14px!important}',
-                '#examo-android-help-redesign{width:100%;max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:14px;color:#14213c;font-family:inherit}',
-                '#examo-android-help-redesign *{box-sizing:border-box}',
-                '.eah-hero{position:relative;display:block;width:100%;height:auto;min-height:0;overflow:hidden;border-radius:19px;border:1px solid #d8e4fb;background:transparent!important;box-shadow:0 7px 16px rgba(33,75,141,.09);line-height:0;padding:0!important}',
-                '.eah-hero-canvas{position:relative;z-index:0;display:block;width:100%;height:auto;max-width:100%;margin:0;padding:0;border:0;background:transparent}',
-                '.eah-hero:after{content:"";position:absolute;z-index:1;left:0;top:0;bottom:0;width:73%;pointer-events:none;background:linear-gradient(90deg,rgba(224,235,255,.99) 0%,rgba(229,234,255,.98) 66%,rgba(231,231,255,.92) 82%,rgba(231,231,255,0) 100%)}',
-                '.eah-hero-copy{position:absolute;z-index:2;left:4.5%;top:13%;width:59%;height:78%;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;pointer-events:none}',
-                '.eah-hero-kicker{margin:0 0 3px;color:#075bd8;font-size:clamp(17px,5.4vw,23px);font-weight:900;font-style:italic;line-height:1.06;letter-spacing:-.035em;text-shadow:0 0 0 #075bd8}',
-                '.eah-hero-headline{margin:0;color:#101b36;font-size:clamp(14px,4.3vw,19px);font-weight:900;font-style:italic;line-height:1.1;letter-spacing:-.04em;white-space:nowrap;text-shadow:0 0 0 #101b36}',
-                '.eah-hero-headline em{color:#075bd8;font-style:italic}',
-                '.eah-hero-description{margin:7px 0 0;color:#162745;font-size:clamp(8px,2.75vw,11px);font-weight:650;line-height:1.32;letter-spacing:-.01em;text-shadow:0 0 0 #162745;max-width:100%}',
-                '.eah-hero-fallback{min-height:148px;background:linear-gradient(110deg,#dceaff 0%,#e3e7ff 60%,#eee6ff 100%)!important;display:flex;align-items:center;padding:20px 17px;line-height:normal}',
-                '.eah-hero-fallback-content{max-width:78%;color:#12264a}',
-                '.eah-hero-fallback-content small{display:block;color:#1762cf;font-size:12px;font-weight:850;letter-spacing:.08em;margin-bottom:7px}',
-                '.eah-hero-fallback-content strong{display:block;font-size:23px;line-height:1.1;font-weight:850}',
-                '.eah-hero-fallback-content strong em{font-style:normal;color:#1765dc}',
-                '.eah-hero-fallback-content p{margin:9px 0 0;color:#435a7b;font-size:13px;line-height:1.4}',
-                '.eah-section-title{margin:2px 2px -5px;color:#14284b;font-weight:850;font-size:20px;line-height:1.2;display:flex;align-items:center;gap:9px}',
-                '.eah-section-title:before{content:"";width:4px;height:23px;border-radius:8px;background:#2469df;display:block}',
-                '.eah-categories{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}',
-                '.eah-category{min-width:0;min-height:112px;padding:12px 10px 11px;text-align:left;border:1px solid rgba(255,255,255,.9);border-radius:17px;box-shadow:0 4px 10px rgba(34,65,116,.06);display:flex;flex-direction:column;align-items:flex-start;gap:5px;color:#14213c;cursor:pointer;position:relative;overflow:hidden;-webkit-tap-highlight-color:transparent}',
-                '.eah-category:after{content:"›";position:absolute;right:9px;top:49px;font-size:25px;line-height:1;color:#14213c;font-weight:400}',
-                '.eah-category:active{transform:scale(.985)}',
-                '.eah-category-icon{width:32px;height:32px;display:flex;align-items:center;justify-content:center;margin-bottom:1px}',
-                '.eah-category-icon svg{width:31px;height:31px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}',
-                '.eah-category strong{font-size:12px;line-height:1.2;font-weight:850;padding-right:13px}',
-                '.eah-category small{font-size:10px;line-height:1.3;color:#43536b;max-width:95%;padding-right:8px}',
-                '.eah-user{background:linear-gradient(145deg,#dff2ff,#e9f4ff);color:#1593e8;border-color:#cde8ff}',
-                '.eah-account{background:linear-gradient(145deg,#eee7ff,#f0ebff);color:#8250ed;border-color:#e2d8ff}',
-                '.eah-exam{background:linear-gradient(145deg,#fff0e5,#fff6ee);color:#f28a20;border-color:#ffe1cb}',
-                '.eah-jobs{background:linear-gradient(145deg,#e1f8eb,#e9f9ef);color:#12a34a;border-color:#cef1dc}',
-                '.eah-docs{background:linear-gradient(145deg,#ffe8f0,#fff0f5);color:#ed3d75;border-color:#ffd8e5}',
-                '.eah-tech{background:linear-gradient(145deg,#e2f0ff,#edf6ff);color:#1769de;border-color:#cfe5ff}',
-                '.eah-category strong,.eah-category small{color:#14213c}',
-                '.eah-panel{display:none;background:#fff;border:1px solid #dce6f6;border-radius:16px;overflow:hidden;box-shadow:0 7px 18px rgba(34,65,116,.07)}',
-                '.eah-panel.is-visible{display:block}',
-                '.eah-panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 15px;background:linear-gradient(100deg,#e8f2ff,#f1efff);border-bottom:1px solid #e0e8f5}',
-                '.eah-panel-head strong{font-size:15px;color:#172b4d}',
-                '.eah-panel-head small{display:block;margin-top:3px;color:#71819a;font-size:11px}',
-                '.eah-panel-close{width:30px;height:30px;border:0;border-radius:50%;background:#fff;color:#405571;font-size:20px;line-height:1}',
-                '.eah-faq-list{padding:7px 10px 10px;display:grid;gap:7px}',
-                '.eah-faq-item{border:1px solid #e1e9f5;border-radius:11px;overflow:hidden;background:#fff}',
-                '.eah-faq-question{width:100%;padding:11px 12px;border:0;background:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;color:#1b2d4a;font-size:12px;font-weight:750;line-height:1.35}',
-                '.eah-faq-question span:last-child{font-size:17px;color:#42628b;flex:0 0 auto}',
-                '.eah-faq-answer{display:none;padding:0 12px 12px;color:#536780;font-size:12px;line-height:1.55;white-space:pre-wrap}',
-                '.eah-faq-item.open .eah-faq-answer{display:block}',
-                '.eah-no-results{padding:16px;color:#63748c;font-size:12px;line-height:1.5}',
-                '.eah-support-card{padding:0;background:rgba(255,255,255,.82);border:1px solid #d8e5fb;border-radius:18px;box-shadow:0 7px 17px rgba(34,65,116,.07);overflow:hidden}',
-                '.eah-support-head{display:flex;align-items:center;gap:11px;padding:15px 15px 13px}',
-                '.eah-support-head-icon{width:42px;height:42px;border-radius:13px;background:#e7f0ff;color:#1e65d2;display:flex;align-items:center;justify-content:center;flex:0 0 42px}',
-                '.eah-support-head-icon svg{width:25px;height:25px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}',
-                '.eah-support-head strong{display:block;color:#172746;font-size:18px;line-height:1.2;font-weight:850}',
-                '.eah-support-head p{margin:4px 0 0;color:#65758d;font-size:12px;line-height:1.4}',
-                '.eah-support-actions{padding:0 10px 11px;display:grid;gap:9px}',
-                '.eah-support-action{width:100%;min-height:66px;padding:11px 13px;display:flex;align-items:center;gap:12px;border:1px solid #e0e7f5;border-radius:14px;text-align:left;text-decoration:none;color:#182a49;box-shadow:0 4px 9px rgba(34,65,116,.06);cursor:pointer;-webkit-tap-highlight-color:transparent}',
-                '.eah-support-action:active{transform:scale(.99)}',
-                '.eah-chat-action{background:linear-gradient(105deg,#f0eaff,#f6f2ff);border-color:#e3d8ff}',
-                '.eah-email-action{background:linear-gradient(105deg,#e8f2ff,#f2f7ff);border-color:#d4e4ff}',
-                '.eah-action-icon{width:39px;height:39px;flex:0 0 39px;border-radius:12px;background:rgba(255,255,255,.8);display:flex;align-items:center;justify-content:center;color:#7544e7}',
-                '.eah-email-action .eah-action-icon{color:#1767dc}',
-                '.eah-action-icon svg{width:25px;height:25px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}',
-                '.eah-action-copy{min-width:0;flex:1;display:grid;gap:3px}',
-                '.eah-action-copy strong{font-size:13px;line-height:1.25;color:#172746;font-weight:850}',
-                '.eah-action-copy small{font-size:11px;line-height:1.3;color:#6c7c92;overflow-wrap:anywhere}',
-                '.eah-action-arrow{flex:0 0 auto;color:#334a6b;font-size:22px;line-height:1}',
-                '@media(min-width:620px){.eah-categories{gap:12px}.eah-category{min-height:132px;padding:15px}.eah-category strong{font-size:14px}.eah-category small{font-size:12px}.eah-category-icon,.eah-category-icon svg{width:36px;height:36px}.eah-support-actions{padding:0 14px 14px}.eah-support-action{min-height:78px;padding:14px 17px}.eah-action-copy strong{font-size:15px}.eah-action-copy small{font-size:13px}}',
-                '@media(max-width:360px){body.examo-android-help-mode .content-area{padding-left:9px!important;padding-right:9px!important}.eah-category{min-height:105px;padding:9px 7px}.eah-category strong{font-size:11px}.eah-category small{font-size:9px}}'
-              ].join('');
-              document.head.appendChild(style);
-
-              var fallbackFaqs = [
-                {question:'How to use this App?',answer:'Examo helps you track jobs, exam forms, preparation and results in one place. Open Jobs and use Add to ExamForm to start.'},
-                {question:'What is Examo?',answer:'Examo is a student management app for government exam aspirants.'},
-                {question:'How to add an exam form?',answer:'Open Jobs > Latest Jobs and click Add to ExamForm next to the exam you want.'},
-                {question:'How to upload my documents?',answer:'Open Student > Documents and upload a JPG, PNG, WEBP or PDF file up to 10 MB.'},
-                {question:'The page is not loading properly',answer:'Wait a moment and refresh. If the problem continues, contact support with a screenshot.'}
-              ];
-              window.__examoAndroidHelpAllFaqs = window.__examoAndroidHelpAllFaqs || fallbackFaqs.slice();
-              window.__examoAndroidHelpFaqsReady = false;
-              window.__examoAndroidHelpCategory = '';
-              window.__examoAndroidHelpCaptureRunning = false;
-              window.__examoAndroidHelpLastSignature = '';
-
-              function makeMarkup() {
-                return [
-                  '<section class="eah-hero" role="img" aria-label="Need Help? We are here for you."><canvas class="eah-hero-canvas" width="382" height="116"></canvas><div class="eah-hero-copy"><div class="eah-hero-kicker">Need Help?</div><div class="eah-hero-headline">We’re Here for <em>You!</em></div><p class="eah-hero-description">Get quick answers, step-by-step guides<br>or contact our support team.</p></div></section>',
-                  '<div class="eah-section-title">Quick Help</div>',
-                  '<section class="eah-categories" aria-label="Help categories">',
-                    '<button type="button" class="eah-category eah-user" data-category="User Guide"><span class="eah-category-icon"><svg viewBox="0 0 24 24"><path d="M3 5.5c3.2-1.4 6.2-.9 9 1.2v14c-2.8-2.1-5.8-2.6-9-1.2z"/><path d="M21 5.5c-3.2-1.4-6.2-.9-9 1.2v14c2.8-2.1 5.8-2.6 9-1.2z"/><path d="M6 9h3M6 12h3M15 9h3M15 12h3"/></svg></span><strong>User Guide</strong><small>Learn how to use Examo</small></button>',
-                    '<button type="button" class="eah-category eah-account" data-category="Account Help"><span class="eah-category-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2.5"/><path d="M5.5 17c.7-2 2-3 3.5-3s2.8 1 3.5 3M15 9h3M15 13h3M15 17h3"/></svg></span><strong>Account Help</strong><small>Login, profile &amp; account issues</small></button>',
-                    '<button type="button" class="eah-category eah-exam" data-category="Exam Forms"><span class="eah-category-icon"><svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h9"/><path d="M14 3v5h5M9 12h6M9 16h3"/><path d="m15.5 17.5 5-5 2 2-5 5-3 1z"/></svg></span><strong>Exam Forms</strong><small>Add, edit &amp; manage exam forms</small></button>',
-                    '<button type="button" class="eah-category eah-jobs" data-category="Jobs &amp; Updates"><span class="eah-category-icon"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18M10 12v2h4v-2"/></svg></span><strong>Jobs &amp; Updates</strong><small>Jobs, admit card &amp; results</small></button>',
-                    '<button type="button" class="eah-category eah-docs" data-category="Documents"><span class="eah-category-icon"><svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg></span><strong>Documents</strong><small>Upload &amp; manage your documents</small></button>',
-                    '<button type="button" class="eah-category eah-tech" data-category="Technical Support"><span class="eah-category-icon"><svg viewBox="0 0 24 24"><path d="M12 8.2a3.8 3.8 0 1 0 0 7.6 3.8 3.8 0 0 0 0-7.6Z"/><path d="m19.4 13.4 1.1.9-1.5 2.6-1.4-.5a7.8 7.8 0 0 1-1.5.9l-.2 1.5h-3l-.3-1.5a7.8 7.8 0 0 1-1.5-.9l-1.4.5-1.5-2.6 1.1-.9a7.4 7.4 0 0 1 0-1.8l-1.1-.9 1.5-2.6 1.4.5a7.8 7.8 0 0 1 1.5-.9l.3-1.5h3l.2 1.5a7.8 7.8 0 0 1 1.5.9l1.4-.5 1.5 2.6-1.1.9a7.4 7.4 0 0 1 0 1.8Z"/></svg></span><strong>Technical Support</strong><small>App, website &amp; other issues</small></button>',
-                  '</section>',
-                  '<section class="eah-panel" aria-live="polite"><div class="eah-panel-head"><div><strong class="eah-panel-title">Help articles</strong><small class="eah-panel-subtitle"></small></div><button type="button" class="eah-panel-close" aria-label="Close">×</button></div><div class="eah-faq-list"></div></section>',
-                  '<section class="eah-support-card">',
-                    '<div class="eah-support-head"><span class="eah-support-head-icon"><svg viewBox="0 0 24 24"><path d="M4 13v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="12" width="4" height="7" rx="2"/><rect x="17" y="12" width="4" height="7" rx="2"/><path d="M19 19c0 2-2 3-5 3h-1"/></svg></span><div><strong>Contact Support</strong><p>Send us your question and our support team will get back to you.</p></div></div>',
-                    '<div class="eah-support-actions">',
-                      '<button type="button" class="eah-support-action eah-chat-action"><span class="eah-action-icon"><svg viewBox="0 0 24 24"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H6l-3 2v-5.5A7.5 7.5 0 1 1 20 11.5Z"/></svg></span><span class="eah-action-copy"><strong>Chat with Examo Assistant</strong><small>Instant answers, available 24/7</small></span><span class="eah-action-arrow">›</span></button>',
-                      '<a class="eah-support-action eah-email-action" href="mailto:examoaspirant@gmail.com?subject=Examo%20Support"><span class="eah-action-icon"><svg viewBox="0 0 24 24"><rect x="2.5" y="4.5" width="19" height="15" rx="2"/><path d="m3.5 6 8.5 7 8.5-7"/></svg></span><span class="eah-action-copy"><strong>Email Support</strong><small>examoaspirant@gmail.com</small></span><span class="eah-action-arrow">›</span></a>',
-                    '</div>',
-                  '</section>'
-                ].join('');
-              }
-
-              function normaliseQuestion(value) {
-                return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
-              }
-
-              // Exact question-to-section mapping: a question is displayed in only its intended category.
-              var questionGroups = {
-                'User Guide': [
-                  'How to use this App?',
-                  'What is Examo?',
-                  'How to set up my student profile?',
-                  'What does the Dashboard show?',
-                  'How to add subjects and schedules?',
-                  'How do I track my exam preparation?',
-                  'What are Notifications and reminders?'
-                ],
-                'Account Help': [
-                  "I can't log in to my account",
-                  'How to reset my password?',
-                  'I did not receive the OTP / verification code',
-                  'Why do I get a code every time I log in?',
-                  'How does Continue with Google work?',
-                  'Is my data and uploaded documents safe?',
-                  'How do I change my email or mobile number?',
-                  'How do I delete my account?',
-                  'My account is blocked',
-                  'How does the free trial work?',
-                  'How much does Examo cost?',
-                  'What payment methods are accepted?',
-                  'How do I buy or renew a plan?',
-                  'How can I change or cancel my plan?',
-                  'How do I check when my plan ends?',
-                  'How do I download my payment receipt?',
-                  'My payment was deducted but my plan is not active'
-                ],
-                'Exam Forms': [
-                  'How do I add an exam form?',
-                  'How do I change my exam form status?',
-                  'Can I add an exam form manually?',
-                  "Why can't I add a job to my Exam Forms?"
-                ],
-                'Jobs & Updates': [
-                  'What are the Jobs, Admit Card and Results tabs?',
-                  'Where can I track my exam dates?',
-                  'How to check my results?'
-                ],
-                'Documents': [
-                  'How to upload my documents?',
-                  'My document upload is failing'
-                ],
-                'Technical Support': [
-                  'The page is not loading properly',
-                  'How do I contact support?'
-                ]
-              };
-              var questionToCategory = {};
-              Object.keys(questionGroups).forEach(function (category) {
-                questionGroups[category].forEach(function (question) {
-                  questionToCategory[normaliseQuestion(question)] = category;
-                });
-              });
-
-              function normaliseFaq(item) {
-                return {
-                  question: String(item.question || item.Question || '').trim().replace(/website/gi, 'App'),
-                  answer: String(item.answer || item.Answer || item.content || '').trim().replace(/website/gi, 'App')
-                };
-              }
-
-              function itemsForCategory(name) {
-                var allowed = questionGroups[name] || [];
-                var byQuestion = {};
-                (window.__examoAndroidHelpAllFaqs || []).forEach(function (raw) {
-                  var faq = normaliseFaq(raw);
-                  var key = normaliseQuestion(faq.question);
-                  if (key) byQuestion[key] = faq;
-                });
-                return allowed.map(function (question) {
-                  return byQuestion[normaliseQuestion(question)];
-                }).filter(Boolean);
-              }
-
-              function renderPanel(title, subtitle, items, emptyText, isLoading) {
-                var root = document.getElementById('examo-android-help-redesign');
-                if (!root) return;
-                var panel = root.querySelector('.eah-panel');
-                var list = panel.querySelector('.eah-faq-list');
-                panel.querySelector('.eah-panel-title').textContent = title;
-                panel.querySelector('.eah-panel-subtitle').textContent = subtitle || '';
-                list.innerHTML = '';
-                panel.classList.add('is-visible');
-
-                if (isLoading) {
-                  var loading = document.createElement('div');
-                  loading.className = 'eah-no-results';
-                  loading.textContent = 'Loading questions...';
-                  list.appendChild(loading);
-                  return;
-                }
-                if (!items || !items.length) {
-                  var empty = document.createElement('div');
-                  empty.className = 'eah-no-results';
-                  empty.textContent = emptyText || 'No questions are available in this section yet.';
-                  list.appendChild(empty);
-                  return;
-                }
-
-                items.forEach(function (raw) {
-                  var item = normaliseFaq(raw);
-                  if (!item.question) return;
-                  var wrap = document.createElement('article');
-                  wrap.className = 'eah-faq-item';
-                  var question = document.createElement('button');
-                  question.type = 'button';
-                  question.className = 'eah-faq-question';
-                  var label = document.createElement('span');
-                  label.textContent = item.question;
-                  var chevron = document.createElement('span');
-                  chevron.textContent = '⌄';
-                  question.appendChild(label);
-                  question.appendChild(chevron);
-                  var answer = document.createElement('div');
-                  answer.className = 'eah-faq-answer';
-                  answer.textContent = item.answer || 'Please contact Examo Support for more help with this question.';
-                  question.addEventListener('click', function () {
-                    var willOpen = !wrap.classList.contains('open');
-                    Array.prototype.forEach.call(list.querySelectorAll('.eah-faq-item.open'), function (node) {
-                      node.classList.remove('open');
-                    });
-                    if (willOpen) wrap.classList.add('open');
-                  });
-                  wrap.appendChild(question);
-                  wrap.appendChild(answer);
-                  list.appendChild(wrap);
-                });
-              }
-
-              function openCategory(name) {
-                window.__examoAndroidHelpCategory = name;
-                var matches = itemsForCategory(name);
-                renderPanel(name + ' – FAQs', 'Questions related to ' + name + '.', matches,
-                  'No FAQs are available in this category yet.', !window.__examoAndroidHelpFaqsReady);
-                var panel = document.querySelector('#examo-android-help-redesign .eah-panel');
-                if (panel) panel.scrollIntoView({behavior:'smooth', block:'nearest'});
-              }
-
-              async function captureFaqs() {
-                if (window.__examoAndroidHelpCaptureRunning) return;
-                var buttons = Array.prototype.slice.call(document.querySelectorAll('.hs-accordion .hs-acc-head'));
-                if (!buttons.length) return;
-                window.__examoAndroidHelpCaptureRunning = true;
-                var originalOpen = document.querySelector('.hs-accordion .hs-acc-item.open .hs-acc-head');
-                var originalQuestion = originalOpen ? (originalOpen.querySelector('span') || originalOpen).innerText.trim() : '';
-                var collected = [];
-                try {
-                  for (var i = 0; i < buttons.length; i++) {
-                    var questionText = (buttons[i].querySelector('span') || buttons[i]).innerText.trim();
-                    if (!questionText) continue;
-                    var current = Array.prototype.slice.call(document.querySelectorAll('.hs-accordion .hs-acc-head')).find(function (b) {
-                      return (b.querySelector('span') || b).innerText.trim() === questionText;
-                    });
-                    if (!current) continue;
-                    var currentItem = current.closest('.hs-acc-item');
-                    if (!currentItem || !currentItem.querySelector('.hs-acc-body')) {
-                      current.click();
-                      await new Promise(function (resolve) { window.setTimeout(resolve, 95); });
-                    }
-                    current = Array.prototype.slice.call(document.querySelectorAll('.hs-accordion .hs-acc-head')).find(function (b) {
-                      return (b.querySelector('span') || b).innerText.trim() === questionText;
-                    });
-                    currentItem = current ? current.closest('.hs-acc-item') : null;
-                    var answerNode = currentItem ? currentItem.querySelector('.hs-acc-body') : null;
-                    collected.push({question:questionText,answer:answerNode ? answerNode.innerText.trim() : ''});
-                  }
-                  if (originalQuestion) {
-                    var restore = Array.prototype.slice.call(document.querySelectorAll('.hs-accordion .hs-acc-head')).find(function (b) {
-                      return (b.querySelector('span') || b).innerText.trim() === originalQuestion;
-                    });
-                    if (restore && !restore.closest('.hs-acc-item').classList.contains('open')) restore.click();
-                  }
-                } finally {
-                  if (collected.length) {
-                    window.__examoAndroidHelpAllFaqs = collected;
-                    window.__examoAndroidHelpFaqsReady = true;
-                  }
-                  window.__examoAndroidHelpCaptureRunning = false;
-                  refreshPanelAfterCapture();
-                }
-              }
-
-              function refreshPanelAfterCapture() {
-                var name = window.__examoAndroidHelpCategory;
-                if (!name) return;
-                renderPanel(name + ' – FAQs', 'Questions related to ' + name + '.', itemsForCategory(name),
-                  'No FAQs are available in this category yet.', !window.__examoAndroidHelpFaqsReady);
-              }
-
-              var captureTimer = null;
-              function queueFaqCapture() {
-                if (window.__examoAndroidHelpCaptureRunning) return;
-                window.clearTimeout(captureTimer);
-                captureTimer = window.setTimeout(captureFaqs, 450);
-              }
-
-              function installScreen(page) {
-                if (!page) return;
-                document.body.classList.add('examo-android-help-mode');
-                var crumb = document.querySelector('.topbar .breadcrumb strong');
-                if (crumb && crumb.textContent.trim() !== 'Help & Support') crumb.textContent = 'Help & Support';
-                page.style.display = 'block';
-                page.style.width = '100%';
-                page.style.maxWidth = '100%';
-                page.style.margin = '0';
-                window.__examoAndroidHelpStyledPage = page;
-                var main = page.querySelector('.hs-main');
-                var side = page.querySelector('.hs-side');
-                if (main) main.style.display = 'none';
-                if (side) side.style.display = 'none';
-
-                if (!document.getElementById('examo-android-help-redesign')) {
-                  var root = document.createElement('div');
-                  root.id = 'examo-android-help-redesign';
-                  root.innerHTML = makeMarkup();
-                  page.insertAdjacentElement('afterend', root);
-
-                  var bannerHero = root.querySelector('.eah-hero');
-                  if (bannerHero) {
-                    var bannerUrl = __EXAMO_HELP_BANNER_SRC__;
-                    var bannerCanvas = bannerHero.querySelector('.eah-hero-canvas');
-                    var bannerContext = bannerCanvas ? bannerCanvas.getContext('2d') : null;
-                    var bannerLoader = new Image();
-                    bannerLoader.onload = function () {
-                      if (!bannerCanvas || !bannerContext) return;
-                      // Draw the complete source image to its exact 382x116 canvas.
-                      // The canvas itself determines the rendered height; no trailing area is created.
-                      bannerContext.clearRect(0, 0, 382, 116);
-                      bannerContext.drawImage(bannerLoader, 0, 0, 382, 116);
-                    };
-                    bannerLoader.onerror = function () {
-                      bannerHero.classList.add('eah-hero-fallback');
-                      bannerHero.innerHTML = '<div class="eah-hero-fallback-content"><small>NEED HELP?</small><strong>We are Here for <em>You!</em></strong><p>Get quick answers, step-by-step guides or contact our support team.</p></div>';
-                    };
-                    if (bannerUrl) {
-                      bannerLoader.src = bannerUrl;
-                    } else {
-                      bannerLoader.onerror();
-                    }
-                  }
-
-                  root.querySelectorAll('.eah-category').forEach(function (button) {
-                    button.addEventListener('click', function () {
-                      openCategory(button.getAttribute('data-category'));
-                    });
-                  });
-                  root.querySelector('.eah-panel-close').addEventListener('click', function () {
-                    root.querySelector('.eah-panel').classList.remove('is-visible');
-                    window.__examoAndroidHelpCategory = '';
-                  });
-                  root.querySelector('.eah-chat-action').addEventListener('click', function () {
-                    var button = document.querySelector('.hs-side .hs-chat-open');
-                    if (button) button.click();
-                  });
-                  window.setTimeout(queueFaqCapture, 900);
-                }
-              }
-
-              function removeScreen() {
-                var root = document.getElementById('examo-android-help-redesign');
-                var page = window.__examoAndroidHelpStyledPage || null;
-                if (root) root.remove();
-                if (root || document.body.classList.contains('examo-android-help-mode')) {
-                  document.body.classList.remove('examo-android-help-mode');
-                  if (page && page.isConnected) {
-                    page.style.display = '';
-                    page.style.width = '';
-                    page.style.maxWidth = '';
-                    page.style.margin = '';
-                    var main = page.querySelector('.hs-main');
-                    var side = page.querySelector('.hs-side');
-                    if (main) main.style.display = '';
-                    if (side) side.style.display = '';
-                  }
-                  window.__examoAndroidHelpStyledPage = null;
-                }
-              }
-
-              function apply() {
-                var page = document.querySelector('.hs-page');
-                var helpHero = page ? page.querySelector('.hs-hero') : null;
-                var helpCategoryCards = page ? page.querySelector('.hs-card-grid') : null;
-                var helpFaqAccordion = page ? page.querySelector('.hs-accordion') : null;
-                // Only the Help page has the Featured FAQ cards and FAQ accordion.
-                // Subscription shares .hs-page/.hs-hero styles, so never transform it.
-                if (page && helpHero && helpCategoryCards && helpFaqAccordion) {
-                  installScreen(page);
-                } else {
-                  removeScreen();
-                }
-              }
-
-              window.__examoApplyAndroidHelp = apply;
-              apply();
-
-              var observer = new MutationObserver(function () {
-                apply();
-                var faqHeadings = document.querySelectorAll('.hs-accordion .hs-acc-head');
-                var signature = Array.prototype.map.call(faqHeadings, function (b) {
-                  return (b.querySelector('span') || b).innerText.trim();
-                }).join('|');
-                if (signature && signature !== window.__examoAndroidHelpLastSignature && !window.__examoAndroidHelpCaptureRunning) {
-                  window.__examoAndroidHelpLastSignature = signature;
-                  queueFaqCapture();
-                }
-              });
-              observer.observe(document.body, {childList:true,subtree:true});
-            })();
-        """.trimIndent()
-
-        val bannerDataUrl = runCatching {
-            val bitmap = android.graphics.BitmapFactory.decodeResource(
-                resources,
-                R.drawable.examo_help_banner
-            ) ?: throw IllegalStateException("Help banner drawable could not be decoded")
-            val pngBytes = java.io.ByteArrayOutputStream().use { output ->
-                bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, output)
-                output.toByteArray()
-            }
-            bitmap.recycle()
-            "data:image/png;base64," + android.util.Base64.encodeToString(
-                pngBytes,
-                android.util.Base64.NO_WRAP
-            )
-        }.onFailure { error ->
-            android.util.Log.e("ExamoHelp", "Unable to prepare Help banner image", error)
-        }.getOrDefault("")
-
-        // Inject the bundled drawable as a data URI. WebView cannot reliably
-        // resolve the drawable-nodpi file URL on all Android versions.
-        val safeBannerSource = JSONObject.quote(bannerDataUrl)
-        view.evaluateJavascript(
-            script.replace("__EXAMO_HELP_BANNER_SRC__", safeBannerSource),
-            null
-        )
-    }
-
-    private fun installLoginSwipeBorder(view: WebView?) {
-        val script = """
-            (function () {
-              function addHandle() {
-                var shell = document.querySelector('.ex-shell');
-                if (!shell) return;
-                if (getComputedStyle(shell).position === 'static') shell.style.position = 'relative';
-                var bar = shell.querySelector('.examo-native-swipe-border');
-                if (!bar) {
-                  bar = document.createElement('div');
-                  bar.className = 'examo-native-swipe-border';
-                  bar.setAttribute('role', 'button');
-                  bar.setAttribute('aria-label', 'Swipe down to return to welcome screen');
-                  // Large transparent touch target, with a slim inset blue grip.
-                  // This keeps the reference look but is much easier to grab.
-                  bar.style.cssText = 'position:absolute;left:0;right:0;top:0;height:46px;background:transparent;border-radius:26px 26px 0 0;z-index:10020;touch-action:none;cursor:ns-resize';
-                  var grip = document.createElement('div');
-                  grip.style.cssText = 'position:absolute;left:14px;right:14px;top:10px;height:6px;background:#2455ad;border-radius:999px;box-shadow:0 2px 4px rgba(20,50,110,.22);pointer-events:none';
-                  bar.appendChild(grip);
-                  var downCue = document.createElement('div');
-                  downCue.textContent = '↓';
-                  downCue.setAttribute('aria-hidden', 'true');
-                  downCue.style.cssText = 'position:absolute;left:50%;top:17px;transform:translateX(-50%);font:700 18px/20px Arial,sans-serif;color:#2455ad;text-shadow:0 1px 2px rgba(20,50,110,.16);pointer-events:none;animation:examoSwipeDown 1.05s ease-in-out infinite';
-                  bar.appendChild(downCue);
-                  if (!document.getElementById('examo-swipe-down-style')) {
-                    var cueStyle = document.createElement('style');
-                    cueStyle.id = 'examo-swipe-down-style';
-                    cueStyle.textContent = '@keyframes examoSwipeDown{0%,100%{transform:translate(-50%,0);opacity:.68}50%{transform:translate(-50%,4px);opacity:1}}';
-                    document.head.appendChild(cueStyle);
-                  }
-                  shell.appendChild(bar);
-                }
-                var brand = shell.querySelector('.ex-mobile-brand');
-                if (brand) {
-                  brand.style.marginTop = '10px';
-                  brand.style.marginBottom = '12px';
-                }
-                var tabs = shell.querySelector('.ex-main-tabs');
-                if (tabs) tabs.style.marginTop = '-8px';
-                if (bar.dataset.dragBound === '1') return;
-                bar.dataset.dragBound = '1';
-                var startY = 0, dragging = false, lastY = 0;
-                bar.addEventListener('touchstart', function(e) {
-                  if (!e.touches || !e.touches.length) return;
-                  startY = e.touches[0].clientY; lastY = startY; dragging = true;
-                  shell.style.transition = 'none';
-                }, {passive:true});
-                bar.addEventListener('touchmove', function(e) {
-                  if (!dragging || !e.touches || !e.touches.length) return;
-                  lastY = e.touches[0].clientY;
-                  var dy = Math.max(0, Math.min(lastY - startY, window.innerHeight * .72));
-                  shell.style.transform = 'translate3d(0,' + dy + 'px,0)';
-                  if (e.cancelable) e.preventDefault();
-                }, {passive:false});
-                function finish() {
-                  if (!dragging) return;
-                  dragging = false;
-                  var dy = Math.max(0, lastY - startY);
-                  shell.style.willChange = 'transform';
-                  shell.style.transition = 'transform 320ms cubic-bezier(.22,.61,.36,1)';
-                  if (dy > 70 && window.ExamoSwipeBridge) {
-                    shell.style.transform = 'translate3d(0,' + window.innerHeight + 'px,0)';
-                    setTimeout(function() {
-                      shell.style.transform = '';
-                      window.ExamoSwipeBridge.showWelcome();
-                    }, 320);
-                  } else {
-                    shell.style.transform = 'translate3d(0,0,0)';
-                    setTimeout(function(){ shell.style.transition = ''; shell.style.willChange = ''; }, 340);
-                  }
-                }
-                bar.addEventListener('touchend', finish, {passive:true});
-                bar.addEventListener('touchcancel', finish, {passive:true});
-                bar.addEventListener('pointerdown', function(e) {
-                  if (e.pointerType === 'touch') return;
-                  startY = lastY = e.clientY; dragging = true;
-                  shell.style.transition = 'none';
-                  bar.setPointerCapture(e.pointerId);
-                });
-                bar.addEventListener('pointermove', function(e) {
-                  if (!dragging || e.pointerType === 'touch') return;
-                  lastY = e.clientY;
-                  var dy = Math.max(0, Math.min(lastY - startY, window.innerHeight * .72));
-                  shell.style.transform = 'translate3d(0,' + dy + 'px,0)';
-                });
-                bar.addEventListener('pointerup', finish);
-                bar.addEventListener('pointercancel', finish);
-              }
-              addHandle();
-              if (!window.__examoSwipeBorderObserver) {
-                window.__examoSwipeBorderObserver = new MutationObserver(addHandle);
-                window.__examoSwipeBorderObserver.observe(document.documentElement, {childList:true,subtree:true});
-              }
-            })();
-        """.trimIndent()
-        val subscriptionBooksDataUrl = runCatching {
-            val bytes = resources.openRawResource(R.drawable.examo_subscription_books).use { it.readBytes() }
-            "data:image/webp;base64," + android.util.Base64.encodeToString(
-                bytes,
-                android.util.Base64.NO_WRAP
-            )
-        }.onFailure { error ->
-            android.util.Log.e("ExamoSubscription", "Unable to load subscription books illustration", error)
-        }.getOrDefault("")
-        val safeBooksUrl = JSONObject.quote(subscriptionBooksDataUrl)
-        view?.evaluateJavascript(
-            script.replace("__EXAMO_SUBSCRIPTION_BOOKS_URL__", safeBooksUrl),
-            null
-        )
-    }
-
     private fun showWelcomeSplash() {
         // Dismiss only the login/signup sheet; never remove or animate the
         // welcome screen underneath it.
@@ -1874,7 +1291,11 @@ class MainActivity : Activity() {
     private fun installMobileNavigationFix(view: WebView?) {
         val script = """
             (function () {
-              if (window.__examoAndroidNavInstalled) return;
+              var subscriptionBooksImageSrc = __EXAMO_SUBSCRIPTION_BOOKS_URL__;
+              if (window.__examoAndroidNavInstalled) {
+                if (window.__examoApplySubscriptionBooks) window.__examoApplySubscriptionBooks();
+                return;
+              }
               window.__examoAndroidNavInstalled = true;
 
               var css = document.createElement('style');
@@ -2635,23 +2056,45 @@ class MainActivity : Activity() {
                 }
               }
 
+              window.__examoApplySubscriptionBooks = function () {
+                if (window.innerWidth > 600) return;
+                var plan = document.querySelector('.hs-page .hs-plan-card');
+                var page = plan && plan.closest('.hs-page');
+                var heroTitle = page && page.querySelector('.hs-hero-title');
+                if (!heroTitle || !subscriptionBooksImageSrc) return;
+                var img = heroTitle.querySelector('.examo-subscription-books-image');
+                if (!img) {
+                  img = document.createElement('img');
+                  img.className = 'examo-subscription-books-image';
+                  img.alt = 'Books with a graduation cap';
+                  img.decoding = 'async';
+                  img.loading = 'eager';
+                  heroTitle.appendChild(img);
+                }
+                if (img.getAttribute('src') !== subscriptionBooksImageSrc) img.src = subscriptionBooksImageSrc;
+                page.classList.add('examo-mobile-subscription-page');
+              };
+
               function decorateDataTables() {
                 if (window.innerWidth > 600) return;
+                window.__examoApplySubscriptionBooks();
                 var subscriptionPlan = document.querySelector('.hs-page .hs-plan-card');
                 if (subscriptionPlan) {
                   var subscriptionPage = subscriptionPlan.closest('.hs-page');
                   if (subscriptionPage) {
                     subscriptionPage.classList.add('examo-mobile-subscription-page');
                     var subscriptionHeroTitle = subscriptionPage.querySelector('.hs-hero-title');
-                    if (subscriptionHeroTitle && subscriptionBooksImageSrc &&
-                        !subscriptionHeroTitle.querySelector('.examo-subscription-books-image')) {
-                      var booksImage = document.createElement('img');
-                      booksImage.className = 'examo-subscription-books-image';
-                      booksImage.alt = 'Books with a graduation cap';
-                      booksImage.decoding = 'async';
-                      booksImage.loading = 'eager';
-                      booksImage.src = subscriptionBooksImageSrc;
-                      subscriptionHeroTitle.appendChild(booksImage);
+                    if (subscriptionHeroTitle && subscriptionBooksImageSrc) {
+                      var booksImage = subscriptionHeroTitle.querySelector('.examo-subscription-books-image');
+                      if (!booksImage) {
+                        booksImage = document.createElement('img');
+                        booksImage.className = 'examo-subscription-books-image';
+                        booksImage.alt = 'Books with a graduation cap';
+                        booksImage.decoding = 'async';
+                        booksImage.loading = 'eager';
+                        subscriptionHeroTitle.appendChild(booksImage);
+                      }
+                      if (booksImage.getAttribute('src') !== subscriptionBooksImageSrc) booksImage.src = subscriptionBooksImageSrc;
                     }
                   }
                 }
@@ -2858,7 +2301,19 @@ class MainActivity : Activity() {
               decorateDataTables();
             })();
         """.trimIndent()
-        view?.evaluateJavascript(script, null)
+        val subscriptionBooksDataUrl = runCatching {
+            val bytes = resources.openRawResource(R.drawable.examo_subscription_books).use { it.readBytes() }
+            "data:image/webp;base64," + android.util.Base64.encodeToString(
+                bytes,
+                android.util.Base64.NO_WRAP
+            )
+        }.onFailure { error ->
+            android.util.Log.e("ExamoSubscription", "Unable to load subscription books illustration", error)
+        }.getOrDefault("")
+        view?.evaluateJavascript(
+            script.replace("__EXAMO_SUBSCRIPTION_BOOKS_URL__", JSONObject.quote(subscriptionBooksDataUrl)),
+            null
+        )
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
