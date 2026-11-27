@@ -53,6 +53,7 @@ class MainActivity : Activity() {
     private lateinit var webView: WebView
     private var splashSheet: ExamoSplashView? = null
     private var authSheetOpen = false
+    private var revealDashboardAfterOtp = false
     private var popupWebView: WebView? = null
     private val activityScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var fileChooserCallback: ValueCallback<Array<Uri>>? = null
@@ -1961,7 +1962,8 @@ class MainActivity : Activity() {
               var dashboardCapBooksUrl = 'url("data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(dashboardCapBooksSvg) + '")';
               css.id = 'examo-android-nav-style';
               css.textContent = '@media(max-width:600px){' +
-                '.sidebar{position:fixed!important;left:0!important;top:0!important;bottom:0!important;width:min(82vw,300px)!important;max-width:300px!important;min-height:100dvh!important;height:100dvh!important;overflow-y:auto!important;overflow-x:hidden!important;transform:translate3d(-105%,0,0)!important;transition:transform .25s ease!important;z-index:10002!important;visibility:visible!important;pointer-events:auto!important;-webkit-overflow-scrolling:touch!important;display:flex!important;touch-action:pan-y!important}' +
+                '.sidebar{position:fixed!important;left:0!important;top:0!important;bottom:0!important;width:min(82vw,300px)!important;max-width:300px!important;min-height:100dvh!important;height:100dvh!important;overflow-y:auto!important;overflow-x:hidden!important;transform:translate3d(-105%,0,0)!important;transition:none!important;z-index:10002!important;visibility:visible!important;pointer-events:auto!important;-webkit-overflow-scrolling:touch!important;display:flex!important;touch-action:pan-y!important}' +
+                '.examo-nav-ready .sidebar{transition:transform .25s ease!important}' +
                 '.sidebar.examo-mobile-open{transform:translate3d(0,0,0)!important}' +
                 '.main-content{width:100%!important;margin-left:0!important;min-width:0!important}' +
                 '.mobile-menu{display:flex!important;align-items:center!important;justify-content:center!important;width:56px!important;height:56px!important;min-width:56px!important;min-height:56px!important;cursor:pointer!important;touch-action:manipulation!important;position:relative!important;z-index:10003!important;border-radius:10px!important;pointer-events:auto!important;user-select:none!important;-webkit-tap-highlight-color:transparent!important}' +
@@ -2644,6 +2646,19 @@ class MainActivity : Activity() {
                 '@media(max-width:360px){.examo-mobile-dashboard-page .dashboard-heading{min-height:70px!important;padding:6px 8px!important}.examo-mobile-dashboard-page .dashboard-heading:after{width:94px!important;height:68px!important;right:8px!important}.examo-mobile-dashboard-page .stats-grid{padding:0 2px!important}.examo-mobile-dashboard-page .stat-card{padding:1px 1px!important}.examo-mobile-dashboard-page .stat-icon{width:25px!important;height:25px!important;min-width:25px!important}}' +
                 '}';
               (document.head || document.documentElement).appendChild(css);
+              // Start the drawer fully closed without animating from the website's
+              // default visible position. Enable normal open/close motion afterwards.
+              var initialSidebar = document.querySelector('.app-layout .sidebar') || document.querySelector('.sidebar');
+              if (initialSidebar && window.innerWidth <= 600) {
+                initialSidebar.classList.remove('examo-mobile-open');
+                initialSidebar.style.setProperty('transition','none','important');
+                initialSidebar.style.setProperty('transform','translate3d(-105%,0,0)','important');
+              }
+              requestAnimationFrame(function () {
+                requestAnimationFrame(function () {
+                  document.documentElement.classList.add('examo-nav-ready');
+                });
+              });
 
               function decorateDashboard() {
                 var dashboardHeading = document.querySelector('.dashboard-heading');
