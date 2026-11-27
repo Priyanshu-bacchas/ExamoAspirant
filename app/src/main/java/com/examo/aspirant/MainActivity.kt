@@ -405,7 +405,13 @@ class MainActivity : Activity() {
 
                 override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
                     super.onPageStarted(view, url, favicon)
-                    if (view == webView) mainWebViewPageReady = false
+                    if (view == webView) {
+                        mainWebViewPageReady = false
+                        // A login redirect can load the dashboard in the same WebView.
+                        // Keep every new main-frame document hidden until mobile nav CSS
+                        // is injected, so the website's default sidebar is never painted.
+                        webView.alpha = 0f
+                    }
                 }
 
                 override fun onPageFinished(view: WebView?, url: String?) {
@@ -419,8 +425,19 @@ class MainActivity : Activity() {
                     }
                     persistLastExamoUrl(url)
                     installMobileNavigationFix(view) {
-                        if (view === webView && !authSheetOpen) {
-                            webView.alpha = 1f
+                        if (view === webView) {
+                            // onPageFinished alone does not guarantee the DOM's next
+                            // frame includes our injected CSS. Reveal only after WebView
+                            // confirms that the styled visual state is ready.
+                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                                webView.postVisualStateCallback(0L, object : WebView.VisualStateCallback() {
+                                    override fun onComplete(requestId: Long) {
+                                        if (view === webView) webView.alpha = 1f
+                                    }
+                                })
+                            } else {
+                                webView.alpha = 1f
+                            }
                         }
                     }
                     installAndroidHelpRedesign(view)
