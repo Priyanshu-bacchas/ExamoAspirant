@@ -118,6 +118,9 @@ class MainActivity : Activity() {
 
         webView = createWebView()
         webView.visibility = if (pendingAtLaunch != null) View.VISIBLE else View.INVISIBLE
+        // Keep the WebView transparent until the Android navigation CSS is installed,
+        // preventing the website's default open sidebar from flashing on first paint.
+        webView.alpha = if (pendingAtLaunch != null) 1f else 0f
         webView.translationY = 0f
         root.addView(webView, FrameLayout.LayoutParams(-1, -1))
         setContentView(root)
@@ -415,7 +418,11 @@ class MainActivity : Activity() {
                         }
                     }
                     persistLastExamoUrl(url)
-                    installMobileNavigationFix(view)
+                    installMobileNavigationFix(view) {
+                        if (view === webView && !authSheetOpen) {
+                            webView.alpha = 1f
+                        }
+                    }
                     installAndroidHelpRedesign(view)
                     hideGoogleSignInInApp(view)
                     installLoginSwipeBorder(view)
@@ -1857,7 +1864,7 @@ class MainActivity : Activity() {
         view?.evaluateJavascript(script, null)
     }
 
-    private fun installMobileNavigationFix(view: WebView?) {
+    private fun installMobileNavigationFix(view: WebView?, onReady: (() -> Unit)? = null) {
         val script = """
             (function () {
               var subscriptionBooksImageSrc = __EXAMO_SUBSCRIPTION_BOOKS_URL__;
@@ -2821,6 +2828,30 @@ class MainActivity : Activity() {
                 };
               }
 
+              function collapseStudentDropdownByDefault() {
+                if (window.__examoStudentDropdownInitialised) return;
+                var side = getSidebar();
+                if (!side) return;
+                var studentToggle = side.querySelector('.sidebar-item[aria-expanded="true"]');
+                if (!studentToggle) {
+                  var candidates = side.querySelectorAll('.sidebar-item');
+                  for (var i = 0; i < candidates.length; i++) {
+                    var candidate = candidates[i];
+                    var label = (candidate.innerText || candidate.textContent || '').trim();
+                    if (/^student(?:\\s|$)/i.test(label) &&
+                        (candidate.hasAttribute('aria-expanded') || candidate.querySelector('.sidebar-chevron'))) {
+                      studentToggle = candidate;
+                      break;
+                    }
+                  }
+                }
+                if (!studentToggle) return;
+                window.__examoStudentDropdownInitialised = true;
+                if (studentToggle.getAttribute('aria-expanded') === 'true') {
+                  studentToggle.click();
+                }
+              }
+
               function bindSidebarSwipe() {
                 var side = getSidebar();
                 if (!side || side.dataset.examoSwipeCloseBound === '1') return;
@@ -2875,11 +2906,13 @@ class MainActivity : Activity() {
                 if (window.innerWidth > 600) closeMenu();
               });
               bindMenu();
+              collapseStudentDropdownByDefault();
               bindSidebarSwipe();
               decorateDashboard();
               if (!window.__examoAndroidNavObserver) {
                 window.__examoAndroidNavObserver = new MutationObserver(function() {
                   bindMenu();
+                  collapseStudentDropdownByDefault();
                   bindSidebarSwipe();
                   decorateDashboard();
                   decorateDataTables();
@@ -2898,10 +2931,15 @@ class MainActivity : Activity() {
         }.onFailure { error ->
             android.util.Log.e("ExamoSubscription", "Unable to load subscription books illustration", error)
         }.getOrDefault("")
-        view?.evaluateJavascript(
-            script.replace("__EXAMO_SUBSCRIPTION_BOOKS_URL__", JSONObject.quote(subscriptionBooksDataUrl)),
-            null
-        )
+        if (view == null) {
+            onReady?.invoke()
+        } else {
+            view.evaluateJavascript(
+                script.replace("__EXAMO_SUBSCRIPTION_BOOKS_URL__", JSONObject.quote(subscriptionBooksDataUrl))
+            ) {
+                onReady?.invoke()
+            }
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
