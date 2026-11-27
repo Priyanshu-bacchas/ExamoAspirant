@@ -346,11 +346,16 @@ class MainActivity : Activity() {
                                 clearSavedLoginOtp()
                                 loginOtpVerificationInProgress = false
                                 pendingOtpCodeToVerify = null
-                                removeNativePendingLoginOtpScreen()
+                                // Keep the native OTP screen over the WebView while the
+                                // authenticated session reloads. This prevents the old
+                                // login/OTP DOM or default sidebar from appearing in between.
+                                revealDashboardAfterOtp = true
                                 mainWebViewPageReady = false
+                                webView.animate().cancel()
                                 webView.visibility = View.VISIBLE
+                                webView.alpha = 0f
                                 webView.translationY = 0f
-                                authSheetOpen = true
+                                authSheetOpen = false
                                 webView.reload()
                             } else {
                                 loginOtpVerificationInProgress = false
@@ -432,7 +437,15 @@ class MainActivity : Activity() {
                             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
                                 webView.postVisualStateCallback(0L, object : WebView.VisualStateCallback() {
                                     override fun onComplete(requestId: Long) {
-                                        if (view === webView) webView.alpha = 1f
+                                        if (view === webView) {
+                                            webView.alpha = 1f
+                                            if (revealDashboardAfterOtp) {
+                                                // Reveal the authenticated page and remove the OTP
+                                                // overlay in the same UI frame.
+                                                revealDashboardAfterOtp = false
+                                                removeNativePendingLoginOtpScreen()
+                                            }
+                                        }
                                     }
                                 })
                             } else {
